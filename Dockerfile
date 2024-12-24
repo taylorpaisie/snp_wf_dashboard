@@ -16,9 +16,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 8000
-
-# COPY Summary-Report.xlsx /app/Summary-Report.xlsx
-# RUN chmod 644 /app/Summary-Report.xlsx
-
     
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "seqera_dashboard:server"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:server"]
