@@ -3,5 +3,6 @@ dash-bio
 dash-bootstrap-components
 pandas
 plotly
+matplotlib
 gunicorn
 openpyxl
