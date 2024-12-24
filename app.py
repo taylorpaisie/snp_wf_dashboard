@@ -3,14 +3,14 @@ from dash import Dash, html, dcc, Input, Output, State
 import dash_bio as dashbio
 from Bio import Phylo
 import io
-import matplotlib.pyplot as plt
 import dash_bootstrap_components as dbc
+import dash_cytoscape as cyto
 
 # Use a Bootstrap theme for enhanced styling
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
 server = app.server  # Expose the WSGI server for deployment
 
-# Layout with enhanced styling and rearranged order
+# Layout with Cytoscape
 app.layout = dbc.Container([
     dbc.Row([
         dbc.Col(html.H1("SNP Workflow Dashboard", className="text-center text-primary mb-4")),
@@ -35,7 +35,7 @@ app.layout = dbc.Container([
             html.Div(id='output-alignment-chart', className="mt-4"),
         ], width=12)
     ]),
-    # Tree Upload and Visualization
+    # Tree Upload and Cytoscape Visualization
     dbc.Row([
         dbc.Col([
             html.H6("Upload Newick Tree File"),
@@ -49,7 +49,29 @@ app.layout = dbc.Container([
                 },
                 multiple=False
             ),
-            html.Div(id='output-tree-chart', className="mt-4"),
+            cyto.Cytoscape(
+                id='phylo-tree',
+                layout={'name': 'breadthfirst'},
+                style={'width': '100%', 'height': '500px'},
+                elements=[],  # Placeholder for tree data
+                stylesheet=[
+                    {
+                        'selector': 'node',
+                        'style': {
+                            'label': 'data(label)',
+                            'background-color': '#0074D9',
+                            'color': '#FFFFFF',
+                        }
+                    },
+                    {
+                        'selector': 'edge',
+                        'style': {
+                            'line-color': '#B10DC9',
+                            'width': 2,
+                        }
+                    }
+                ]
+            )
         ], width=12)
     ]),
 ], fluid=True)
@@ -78,7 +100,7 @@ def display_msa(file_contents, file_name):
 
 
 @app.callback(
-    Output('output-tree-chart', 'children'),
+    Output('phylo-tree', 'elements'),
     Input('upload-tree', 'contents'),
     State('upload-tree', 'filename')
 )
@@ -88,26 +110,25 @@ def display_tree(file_contents, file_name):
             content_type, content_string = file_contents.split(',')
             decoded = base64.b64decode(content_string).decode('utf-8')
 
-            # Parse the Newick file
+            # Parse the Newick file and convert to Cytoscape elements
             tree = Phylo.read(io.StringIO(decoded), "newick")
+            elements = []
 
-            # Render the tree to a PNG image
-            temp_image_path = "tree_image.png"
-            fig = plt.figure(figsize=(10, 10))
-            Phylo.draw(tree, do_show=False)
-            plt.savefig(temp_image_path)
-            plt.close(fig)
+            def add_clade(clade, parent=None):
+                node_id = str(id(clade))  # Unique ID for each clade
+                label = clade.name if clade.name else "Internal Node"
+                elements.append({'data': {'id': node_id, 'label': label}})
+                if parent:
+                    elements.append({'data': {'source': parent, 'target': node_id}})
+                for child in clade.clades:
+                    add_clade(child, node_id)
 
-            # Convert the image to base64 for embedding in Dash
-            with open(temp_image_path, "rb") as f:
-                encoded_image = base64.b64encode(f.read()).decode('utf-8')
+            # Start traversing the tree from the root
+            add_clade(tree.root)
 
-            # Return the image as an HTML element
-            return html.Img(src=f"data:image/png;base64,{encoded_image}", style={"width": "100%"})
+            return elements
 
-        else:
-            return html.Div("Uploaded file is not a valid Newick file.", className="text-danger")
-    return html.Div("No tree file uploaded yet.", className="text-muted")
+    return []
 
 
 if __name__ == '__main__':
