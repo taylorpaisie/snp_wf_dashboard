@@ -4,42 +4,55 @@ import dash_bio as dashbio
 from Bio import Phylo
 import io
 import matplotlib.pyplot as plt
-import os
+import dash_bootstrap_components as dbc
 
-app = Dash(__name__)
+# Use a Bootstrap theme for enhanced styling
+app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
 server = app.server  # Expose the WSGI server for deployment
 
-app.layout = html.Div([
-    # Upload FASTA file
-    dcc.Upload(
-        id='upload-fasta',
-        children=html.Div([
-            'Drag and Drop or ', html.A('Select a FASTA File')
-        ]),
-        style={
-            'width': '100%', 'height': '60px', 'lineHeight': '60px',
-            'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-            'textAlign': 'center', 'margin': '10px'
-        },
-        multiple=False
-    ),
-    html.Div(id='output-alignment-chart'),  # Placeholder for MSA visualization
-
-    # Upload Newick file
-    dcc.Upload(
-        id='upload-tree',
-        children=html.Div([
-            'Drag and Drop or ', html.A('Select a Newick Tree File')
-        ]),
-        style={
-            'width': '100%', 'height': '60px', 'lineHeight': '60px',
-            'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-            'textAlign': 'center', 'margin': '10px'
-        },
-        multiple=False
-    ),
-    html.Div(id='output-tree-chart')  # Placeholder for tree visualization
-])
+# Layout with enhanced styling and rearranged order
+app.layout = dbc.Container([
+    dbc.Row([
+        dbc.Col(html.H1("SNP Workflow Dashboard", className="text-center text-primary mb-4")),
+    ]),
+    dbc.Row([
+        dbc.Col(html.H5("Upload your files to visualize MSA and Phylogenetic Trees", className="text-center text-secondary mb-4"))
+    ]),
+    # MSA Upload and Visualization
+    dbc.Row([
+        dbc.Col([
+            html.H6("Upload FASTA File"),
+            dcc.Upload(
+                id='upload-fasta',
+                children=dbc.Button("Select FASTA File", color="primary", className="mt-2"),
+                style={
+                    'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                    'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                    'textAlign': 'center', 'margin': '10px'
+                },
+                multiple=False
+            ),
+            html.Div(id='output-alignment-chart', className="mt-4"),
+        ], width=12)
+    ]),
+    # Tree Upload and Visualization
+    dbc.Row([
+        dbc.Col([
+            html.H6("Upload Newick Tree File"),
+            dcc.Upload(
+                id='upload-tree',
+                children=dbc.Button("Select Tree File", color="primary", className="mt-2"),
+                style={
+                    'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                    'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                    'textAlign': 'center', 'margin': '10px'
+                },
+                multiple=False
+            ),
+            html.Div(id='output-tree-chart', className="mt-4"),
+        ], width=12)
+    ]),
+], fluid=True)
 
 
 @app.callback(
@@ -60,8 +73,8 @@ def display_msa(file_contents, file_name):
                 colorscale='nucleotide'
             )
         else:
-            return html.Div("Uploaded file is not a valid FASTA file.")
-    return html.Div("No FASTA file uploaded yet.")
+            return html.Div("Uploaded file is not a valid FASTA file.", className="text-danger")
+    return html.Div("No FASTA file uploaded yet.", className="text-muted")
 
 
 @app.callback(
@@ -90,11 +103,11 @@ def display_tree(file_contents, file_name):
                 encoded_image = base64.b64encode(f.read()).decode('utf-8')
 
             # Return the image as an HTML element
-            return html.Img(src=f"data:image/png;base64,{encoded_image}")
+            return html.Img(src=f"data:image/png;base64,{encoded_image}", style={"width": "100%"})
 
         else:
-            return html.Div("Uploaded file is not a valid Newick file.")
-    return html.Div("No tree file uploaded yet.")
+            return html.Div("Uploaded file is not a valid Newick file.", className="text-danger")
+    return html.Div("No tree file uploaded yet.", className="text-muted")
 
 
 if __name__ == '__main__':
