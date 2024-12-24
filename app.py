@@ -3,6 +3,7 @@ from dash import Dash, html, dcc, Input, Output, State
 import dash_bio as dashbio
 
 app = Dash(__name__)
+server = app.server  # Add this line
 
 app.layout = html.Div([
     dcc.Upload(
