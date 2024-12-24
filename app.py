@@ -52,6 +52,7 @@ def display_msa(file_contents, file_name):
         # Display the MSA viewer
         return dashbio.AlignmentChart(
             id='alignment-viewer',
+            colorscale='nucleotide',
             data=decoded
         )
     return html.Div("Please upload a valid FASTA file.")
