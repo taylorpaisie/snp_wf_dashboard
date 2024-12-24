@@ -22,6 +22,9 @@ app.layout = html.Div([
 ])
 
 
+import os
+import tempfile
+
 @app.callback(
     Output('output-alignment-chart', 'children'),
     Input('upload-data', 'contents'),
@@ -30,14 +33,24 @@ app.layout = html.Div([
 def update_output(file_contents, file_name):
     if file_contents is not None and file_name.endswith('.fasta'):
         content_type, content_string = file_contents.split(',')
-        decoded = base64.b64decode(content_string).decode('utf-8')
+        decoded = base64.b64decode(content_string)
+
+        # Save the file to a temporary location
+        temp_file_path = os.path.join(tempfile.gettempdir(), file_name)
+        with open(temp_file_path, 'wb') as f:
+            f.write(decoded)
+
+        # Optionally, read and process the file
+        with open(temp_file_path, 'r') as f:
+            file_content = f.read()
 
         return dashbio.AlignmentChart(
             id='alignment-viewer',
-            data=decoded
+            data=file_content
         )
     else:
         return html.Div("Please upload a valid FASTA file.")
+
 
 
 if __name__ == '__main__':
