@@ -1,10 +1,11 @@
 import base64
-from dash import Input, Output, State
+from dash import Input, Output, State, html
 from dash.exceptions import PreventUpdate
 from dash_bio import AlignmentChart
 from Bio import Phylo
 from io import StringIO
-import dash_html_components as html
+import os
+import matplotlib.pyplot as plt
 
 def register_callbacks(app):
     # Callback for MSA Visualization
@@ -27,8 +28,30 @@ def register_callbacks(app):
                     tilewidth=20
                 )
             else:
-                return "Uploaded file is not a valid FASTA file."
-        return "No FASTA file uploaded yet."
+                return html.Div("Uploaded file is not a valid FASTA file.", className="text-danger")
+        return html.Div("No FASTA file uploaded yet.", className="text-warning")
+
+    # Helper function for rendering tree as SVG
+    def render_phylogenetic_tree_to_svg(file_contents):
+        content_type, content_string = file_contents.split(',')
+        decoded = base64.b64decode(content_string).decode('utf-8')
+        tree = Phylo.read(StringIO(decoded), "newick")
+        svg_path = "tree.svg"
+
+        # Generate SVG
+        plt.figure(figsize=(10, 6))
+        ax = plt.subplot(111)
+        Phylo.draw(tree, do_show=False, axes=ax)
+        plt.savefig(svg_path, format="svg")
+        plt.close()
+
+        # Read the SVG file back
+        with open(svg_path, "r") as svg_file:
+            svg_content = svg_file.read()
+
+        # Clean up
+        os.remove(svg_path)
+        return svg_content
 
     # Callback for Phylogenetic Tree Visualization (Cytoscape-based)
     @app.callback(
@@ -100,21 +123,19 @@ def register_callbacks(app):
 
         return [], []
 
-    # Callback for Phylogenetic Tree Visualization (ASCII-based)
+    # Callback for Phylogenetic Tree Visualization (SVG-based)
     @app.callback(
         Output('phylo-tree-container', 'children'),
         Input('upload-tree', 'contents')
     )
-    def display_tree_ascii(file_contents):
-        if not file_contents:
-            raise PreventUpdate  # Prevent update if no file uploaded
-
-        # Decode and parse the Newick file
-        content_type, content_string = file_contents.split(',')
-        decoded = base64.b64decode(content_string).decode('utf-8')
-        tree = Phylo.read(StringIO(decoded), "newick")
-
-        # Render tree as ASCII
-        output = StringIO()
-        Phylo.draw_ascii(tree, output)
-        return html.Pre(output.getvalue())
+    def display_tree_svg(file_contents):
+        if file_contents:
+            try:
+                svg_content = render_phylogenetic_tree_to_svg(file_contents)
+                return html.Div(
+                    html.ObjectEl(id="tree-svg", data="data:image/svg+xml;base64," + base64.b64encode(svg_content.encode()).decode(), type="image/svg+xml"),
+                    style={"textAlign": "center"}
+                )
+            except Exception as e:
+                return html.Div(f"Error processing tree file: {str(e)}", className="text-danger")
+        return html.Div("No tree file uploaded yet.", className="text-warning")

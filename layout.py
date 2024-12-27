@@ -1,32 +1,13 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from io import StringIO
-from Bio import Phylo
-import base64
-
-
-# Function to render phylogenetic tree to SVG format
-def render_phylogenetic_tree(file_contents):
-    # Decode the uploaded Newick file
-    content_type, content_string = file_contents.split(',')
-    decoded = base64.b64decode(content_string).decode('utf-8')
-
-    # Parse the Newick tree
-    tree = Phylo.read(StringIO(decoded), "newick")
-
-    # Convert tree to ASCII or SVG representation
-    output = StringIO()
-    Phylo.draw(tree, do_show=False)  # You can use this to save as SVG directly
-    ascii_tree = tree.format("ascii")
-    return html.Pre(ascii_tree)  # Embed as preformatted text
-
+import dash_cytoscape as cyto  # Ensure you import Cytoscape
 
 # Define the layout
 app_layout = dbc.Container([
     dbc.NavbarSimple(
         brand="SNP Workflow Dashboard",
         brand_href="#",
-        color="primary",
+        color="success",
         dark=True,
     ),
     dcc.Tabs([
@@ -82,7 +63,14 @@ app_layout = dbc.Container([
                             },
                             multiple=False
                         ),
-                        html.Div(id='phylo-tree-container', className="mt-4")
+                        html.Div(id='phylo-tree-container', className="mt-4"),
+                        cyto.Cytoscape(
+                            id='phylo-tree',
+                            layout={'name': 'preset'},
+                            style={'width': '100%', 'height': '500px'},
+                            elements=[],
+                            stylesheet=[]
+                        )
                     ], width=12)
                 ])
             ])
