@@ -59,58 +59,114 @@ def create_tree_plot(tree_file, metadata_file):
     tree = Phylo.read(tree_file, 'newick')
     metadata = pd.read_csv(metadata_file, sep='\t')
 
-    # Generate x and y coordinates
-    x_coords, y_coords = get_rectangular_coordinates(tree)
+    # Function to sort clades by branch length
+    def sort_clades_by_branch_length(clade):
+        if not clade.is_terminal():
+            clade.clades.sort(key=lambda child: child.branch_length if child.branch_length else 0)
+            for child in clade.clades:
+                sort_clades_by_branch_length(child)
+
+    # Sort the tree
+    sort_clades_by_branch_length(tree.root)
 
     # Map metadata to colors
     location_colors = {
-        loc: qualitative.Plotly[i % len(qualitative.Plotly)]
+        loc: qualitative.Set3[i % len(qualitative.Set3)]
         for i, loc in enumerate(metadata['location'].unique())
     }
 
+    # Generate x and y coordinates
+    x_coords = {}
+    y_coords = {}
+    max_y = 0
+
+    def assign_coordinates(clade, x_start=0, y_start=0):
+        nonlocal max_y
+        branch_length = clade.branch_length if clade.branch_length else 0.001  # Minimal branch length
+        if clade.is_terminal():
+            # Assign coordinates for tips
+            x_coords[clade] = x_start + branch_length
+            y_coords[clade] = y_start
+            max_y = max(max_y, y_start)
+            return y_start + 1
+        else:
+            # Recursively assign coordinates for child clades
+            y_positions = []
+            for child in clade.clades:
+                y_start = assign_coordinates(child, x_start + branch_length, y_start)
+                y_positions.append(y_start - 1)
+            # Position the internal node at the average of its children
+            x_coords[clade] = x_start + branch_length
+            y_coords[clade] = sum(y_positions) / len(y_positions)
+            return y_start
+
+    assign_coordinates(tree.root)
+
+    # Create line shapes for branches
     line_shapes = []
-    draw_clade_rectangular(tree.root, 0, line_shapes, x_coords, y_coords)
+    for clade in tree.find_clades(order='level'):
+        x_start = x_coords[clade]
+        y_start = y_coords[clade]
+        if clade.clades:
+            # Draw vertical lines connecting children
+            y_positions = [y_coords[child] for child in clade.clades]
+            line_shapes.append(dict(
+                type='line',
+                x0=x_start, y0=min(y_positions),
+                x1=x_start, y1=max(y_positions),
+                line=dict(color='black', width=1)
+            ))
+            # Draw horizontal lines to children
+            for child in clade.clades:
+                x_end = x_coords[child]
+                y_end = y_coords[child]
+                line_shapes.append(dict(
+                    type='line',
+                    x0=x_start, y0=y_end,
+                    x1=x_end, y1=y_end,
+                    line=dict(color='black', width=1)
+                ))
 
     # Create scatter points for tips with unique legend entries
     tip_markers = []
     seen_locations = set()
-    for clade, x in x_coords.items():
-        if clade.is_terminal():
-            y = y_coords[clade]
-            if clade.name in metadata['strain'].values:
-                meta_row = metadata[metadata['strain'] == clade.name].iloc[0]
-                color = location_colors.get(meta_row['location'], 'gray')
+    for clade in tree.get_terminals():
+        x = x_coords[clade]
+        y = y_coords[clade]
+        if clade.name in metadata['strain'].values:
+            meta_row = metadata[metadata['strain'] == clade.name].iloc[0]
+            location = meta_row['location']
+            color = location_colors.get(location, 'gray')
 
-                # Add to legend only if not already seen
-                show_legend = meta_row['location'] not in seen_locations
-                if show_legend:
-                    seen_locations.add(meta_row['location'])
+            # Add to legend only if not already seen
+            show_legend = location not in seen_locations
+            if show_legend:
+                seen_locations.add(location)
 
-                tip_markers.append(go.Scatter(
-                    x=[x],
-                    y=[y],
-                    mode='markers+text',
-                    marker=dict(size=10, color=color, line=dict(width=1, color='black')),
-                    name=meta_row['location'] if show_legend else None,  # Add legend entry only once
-                    text=f"<b>{clade.name}</b><br>Location: {meta_row['location']}<br>Date: {meta_row['date']}",
-                    textposition="middle right",
-                    hoverinfo='text',
-                    showlegend=show_legend  # Show legend only for the first occurrence
-                ))
+            tip_markers.append(go.Scatter(
+                x=[x],
+                y=[y],
+                mode='markers+text',
+                marker=dict(size=10, color=color, line=dict(width=1, color='black')),
+                name=location if show_legend else None,  # Add legend entry only once
+                text=f"<b>{clade.name}</b><br>Location: {meta_row['location']}<br>Date: {meta_row['date']}",
+                textposition="middle right",
+                hoverinfo='text',
+                showlegend=show_legend  # Show legend only for the first occurrence
+            ))
 
     layout = go.Layout(
-        title='Phylogenetic Tree with Enhanced Features',
+        title='Phylogenetic Tree (Sorted by Branch Length)',
         xaxis=dict(
             title='Evolutionary Distance',
             showgrid=True,
-            zeroline=False,
-            range=[0, max(x_coords.values()) * 1.1]
+            zeroline=False
         ),
         yaxis=dict(
             showgrid=False,
             zeroline=False,
             showticklabels=False,
-            range=[min(y_coords.values()) - 1, max(y_coords.values()) + 1]
+            range=[-1, max_y + 1]
         ),
         shapes=line_shapes,
         height=800,
@@ -118,9 +174,6 @@ def create_tree_plot(tree_file, metadata_file):
     )
 
     return go.Figure(data=tip_markers, layout=layout)
-
-
-
 
 def register_callbacks(app):
     @app.callback(
