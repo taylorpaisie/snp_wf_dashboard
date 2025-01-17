@@ -53,41 +53,74 @@ def draw_clade_rectangular(clade, x_start, line_shapes, x_coords, y_coords):
             draw_clade_rectangular(subclade, x_end, line_shapes, x_coords, y_coords)
 
 def create_tree_plot(tree_file, metadata_file):
+    from plotly.colors import qualitative
+
+    # Load tree and metadata
     tree = Phylo.read(tree_file, 'newick')
+    metadata = pd.read_csv(metadata_file, sep='\t')
+
+    # Generate x and y coordinates
     x_coords, y_coords = get_rectangular_coordinates(tree)
 
-    metadata = pd.read_csv(metadata_file, sep='\t')
-    location_colors = {loc: f"hsl({i * 360 / len(metadata['location'].unique())}, 70%, 50%)" for i, loc in enumerate(metadata['location'].unique())}
+    # Map metadata to colors
+    location_colors = {
+        loc: qualitative.Plotly[i % len(qualitative.Plotly)]
+        for i, loc in enumerate(metadata['location'].unique())
+    }
 
     line_shapes = []
     draw_clade_rectangular(tree.root, 0, line_shapes, x_coords, y_coords)
 
-    # Create scatter points for tips
+    # Create scatter points for tips with unique legend entries
     tip_markers = []
+    seen_locations = set()
     for clade, x in x_coords.items():
         if clade.is_terminal():
             y = y_coords[clade]
             if clade.name in metadata['strain'].values:
                 meta_row = metadata[metadata['strain'] == clade.name].iloc[0]
                 color = location_colors.get(meta_row['location'], 'gray')
+
+                # Add to legend only if not already seen
+                show_legend = meta_row['location'] not in seen_locations
+                if show_legend:
+                    seen_locations.add(meta_row['location'])
+
                 tip_markers.append(go.Scatter(
                     x=[x],
                     y=[y],
-                    mode='markers',
+                    mode='markers+text',
                     marker=dict(size=10, color=color, line=dict(width=1, color='black')),
-                    name=meta_row['location'],
-                    text=f"{clade.name}<br>Location: {meta_row['location']}<br>Date: {meta_row['date']}",
-                    hoverinfo='text'
+                    name=meta_row['location'] if show_legend else None,  # Add legend entry only once
+                    text=f"<b>{clade.name}</b><br>Location: {meta_row['location']}<br>Date: {meta_row['date']}",
+                    textposition="middle right",
+                    hoverinfo='text',
+                    showlegend=show_legend  # Show legend only for the first occurrence
                 ))
 
     layout = go.Layout(
-        title='Phylogenetic Tree (Rectangular Layout)',
-        xaxis=dict(title='Evolutionary Distance', showgrid=True, zeroline=False, range=[0, max(x_coords.values()) * 1.1]),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[min(y_coords.values()) - 1, max(y_coords.values()) + 1]),
+        title='Phylogenetic Tree with Enhanced Features',
+        xaxis=dict(
+            title='Evolutionary Distance',
+            showgrid=True,
+            zeroline=False,
+            range=[0, max(x_coords.values()) * 1.1]
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False,
+            range=[min(y_coords.values()) - 1, max(y_coords.values()) + 1]
+        ),
         shapes=line_shapes,
-        height=800
+        height=800,
+        legend=dict(title="Locations", orientation="h", y=-0.2),
     )
+
     return go.Figure(data=tip_markers, layout=layout)
+
+
+
 
 def register_callbacks(app):
     @app.callback(
