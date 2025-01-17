@@ -1,7 +1,6 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
-
 # Define the layout
 app_layout = dbc.Container([
     dbc.NavbarSimple(
@@ -45,7 +44,8 @@ app_layout = dbc.Container([
                 ])
             ])
         ]),
-        # Tab for Phylogenetic Tree
+
+        # Tab for Phylogenetic Tree Visualization
         dcc.Tab(label='Phylogenetic Tree', children=[
             dbc.Container([
                 dbc.Row([
@@ -72,6 +72,12 @@ app_layout = dbc.Container([
                                 'textAlign': 'center', 'margin': '10px'
                             },
                             multiple=False
+                        ),
+                        dcc.Checklist(
+                            id='show-tip-labels',
+                            options=[{'label': 'Show Tip Labels', 'value': 'SHOW'}],
+                            value=[],  # Default: labels off
+                            style={"marginTop": "10px"}
                         ),
                         html.Div(id='tree-graph-container', className="mt-4")
                     ], width=12)
