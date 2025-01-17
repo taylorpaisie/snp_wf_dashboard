@@ -119,8 +119,8 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels):
     for clade in tree.get_terminals():
         x = x_coords[clade]
         y = y_coords[clade]
-        if clade.name in metadata['strain'].values:
-            meta_row = metadata[metadata['strain'] == clade.name].iloc[0]
+        if clade.name in metadata['taxa'].values:
+            meta_row = metadata[metadata['taxa'] == clade.name].iloc[0]
             location = meta_row['location']
             color = location_colors.get(location, 'gray')
 
