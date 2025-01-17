@@ -62,7 +62,7 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels):
 
     # Map metadata to colors
     location_colors = {
-        loc: qualitative.Set3[i % len(qualitative.Set3)]
+        loc: qualitative.Plotly[i % len(qualitative.Plotly)]
         for i, loc in enumerate(metadata['location'].unique())
     }
 
