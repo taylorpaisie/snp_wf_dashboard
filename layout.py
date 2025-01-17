@@ -1,13 +1,13 @@
-from dash import html, dcc
+from dash import dcc, html
 import dash_bootstrap_components as dbc
-import dash_cytoscape as cyto  # Ensure you import Cytoscape
+
 
 # Define the layout
 app_layout = dbc.Container([
     dbc.NavbarSimple(
-        brand="SNP Workflow Dashboard",
+        brand="Phylogenetic Workflow Dashboard",
         brand_href="#",
-        color="success",
+        color="primary",
         dark=True,
     ),
     dcc.Tabs([
@@ -49,7 +49,7 @@ app_layout = dbc.Container([
         dcc.Tab(label='Phylogenetic Tree', children=[
             dbc.Container([
                 dbc.Row([
-                    dbc.Col(html.H5("Upload a Newick Tree File to Visualize Phylogenetic Trees", className="text-center text-secondary mb-4"))
+                    dbc.Col(html.H5("Upload a Newick Tree File and Metadata File", className="text-center text-secondary mb-4"))
                 ]),
                 dbc.Row([
                     dbc.Col([
@@ -63,14 +63,17 @@ app_layout = dbc.Container([
                             },
                             multiple=False
                         ),
-                        html.Div(id='phylo-tree-container', className="mt-4"),
-                        cyto.Cytoscape(
-                            id='phylo-tree',
-                            layout={'name': 'preset'},
-                            style={'width': '100%', 'height': '500px'},
-                            elements=[],
-                            stylesheet=[]
-                        )
+                        dcc.Upload(
+                            id='upload-metadata',
+                            children=dbc.Button("Select Metadata File", color="primary", className="mt-2"),
+                            style={
+                                'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                'textAlign': 'center', 'margin': '10px'
+                            },
+                            multiple=False
+                        ),
+                        html.Div(id='tree-graph-container', className="mt-4")
                     ], width=12)
                 ])
             ])

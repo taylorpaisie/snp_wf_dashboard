@@ -1,141 +1,146 @@
 import base64
 from dash import Input, Output, State, html
 from dash.exceptions import PreventUpdate
-from dash_bio import AlignmentChart
+import plotly.graph_objs as go
 from Bio import Phylo
 from io import StringIO
-import os
-import matplotlib.pyplot as plt
+import pandas as pd
+from dash import dcc
+from dash_bio.utils import PdbParser
+from dash_bio import AlignmentChart
+
+
+def get_rectangular_coordinates(tree):
+    xcoords = tree.depths(unit_branch_lengths=True)
+    ycoords = {}
+
+    def calc_y_coordinates(clade, current_y):
+        if clade.is_terminal():
+            ycoords[clade] = current_y
+            return current_y + 1
+
+        for subclade in clade:
+            current_y = calc_y_coordinates(subclade, current_y)
+
+        ycoords[clade] = (ycoords[clade.clades[0]] + ycoords[clade.clades[-1]]) / 2
+        return current_y
+
+    calc_y_coordinates(tree.root, 0)
+    return xcoords, ycoords
+
+def draw_clade_rectangular(clade, x_start, line_shapes, x_coords, y_coords):
+    x_end = x_coords[clade]
+    y_current = y_coords[clade]
+
+    # Draw horizontal line for the branch
+    line_shapes.append(dict(
+        type='line',
+        x0=x_start, y0=y_current, x1=x_end, y1=y_current,
+        line=dict(color='black', width=1)
+    ))
+
+    # Draw vertical connecting lines for children
+    if clade.clades:
+        y_top = y_coords[clade.clades[0]]
+        y_bottom = y_coords[clade.clades[-1]]
+        line_shapes.append(dict(
+            type='line',
+            x0=x_end, y0=y_bottom, x1=x_end, y1=y_top,
+            line=dict(color='black', width=1)
+        ))
+
+        for subclade in clade:
+            draw_clade_rectangular(subclade, x_end, line_shapes, x_coords, y_coords)
+
+def create_tree_plot(tree_file, metadata_file):
+    tree = Phylo.read(tree_file, 'newick')
+    x_coords, y_coords = get_rectangular_coordinates(tree)
+
+    metadata = pd.read_csv(metadata_file, sep='\t')
+    location_colors = {loc: f"hsl({i * 360 / len(metadata['location'].unique())}, 70%, 50%)" for i, loc in enumerate(metadata['location'].unique())}
+
+    line_shapes = []
+    draw_clade_rectangular(tree.root, 0, line_shapes, x_coords, y_coords)
+
+    # Create scatter points for tips
+    tip_markers = []
+    for clade, x in x_coords.items():
+        if clade.is_terminal():
+            y = y_coords[clade]
+            if clade.name in metadata['strain'].values:
+                meta_row = metadata[metadata['strain'] == clade.name].iloc[0]
+                color = location_colors.get(meta_row['location'], 'gray')
+                tip_markers.append(go.Scatter(
+                    x=[x],
+                    y=[y],
+                    mode='markers',
+                    marker=dict(size=10, color=color, line=dict(width=1, color='black')),
+                    name=meta_row['location'],
+                    text=f"{clade.name}<br>Location: {meta_row['location']}<br>Date: {meta_row['date']}",
+                    hoverinfo='text'
+                ))
+
+    layout = go.Layout(
+        title='Phylogenetic Tree (Rectangular Layout)',
+        xaxis=dict(title='Evolutionary Distance', showgrid=True, zeroline=False, range=[0, max(x_coords.values()) * 1.1]),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[min(y_coords.values()) - 1, max(y_coords.values()) + 1]),
+        shapes=line_shapes,
+        height=800
+    )
+    return go.Figure(data=tip_markers, layout=layout)
 
 def register_callbacks(app):
-    # Callback for MSA Visualization
     @app.callback(
         Output('output-alignment-chart', 'children'),
         [Input('upload-fasta', 'contents'),
-         Input('alignment-colorscale', 'value')],
+        Input('alignment-colorscale', 'value')],
         State('upload-fasta', 'filename')
     )
     def display_msa(file_contents, colorscale, file_name):
         if file_contents:
-            if file_name.endswith('.fasta'):
+            try:
+                # Decode the uploaded file
                 content_type, content_string = file_contents.split(',')
                 decoded = base64.b64decode(content_string).decode('utf-8')
+                print("Decoded FASTA content:", decoded)  # Debugging output
 
-                return AlignmentChart(
-                    id='alignment-viewer',
-                    data=decoded,
-                    colorscale=colorscale if colorscale else 'nucleotide',
-                    tilewidth=20
-                )
-            else:
-                return html.Div("Uploaded file is not a valid FASTA file.", className="text-danger")
+                if file_name.endswith('.fasta'):
+                    # Render the AlignmentChart
+                    return AlignmentChart(
+                        id='alignment-viewer',
+                        data=decoded,
+                        colorscale=colorscale if colorscale else 'nucleotide',
+                        tilewidth=20
+                    )
+                else:
+                    return html.Div("Uploaded file is not a valid FASTA file.", className="text-danger")
+            except Exception as e:
+                print("Error processing FASTA file:", str(e))  # Debugging output
+                return html.Div(f"An error occurred: {str(e)}", className="text-danger")
+
         return html.Div("No FASTA file uploaded yet.", className="text-warning")
 
-    # Helper function for rendering tree as SVG
-    def render_phylogenetic_tree_to_svg(file_contents):
-        content_type, content_string = file_contents.split(',')
-        decoded = base64.b64decode(content_string).decode('utf-8')
-        tree = Phylo.read(StringIO(decoded), "newick")
-        svg_path = "tree.svg"
-
-        # Generate SVG
-        plt.figure(figsize=(10, 6))
-        ax = plt.subplot(111)
-        Phylo.draw(tree, do_show=False, axes=ax)
-        plt.savefig(svg_path, format="svg")
-        plt.close()
-
-        # Read the SVG file back
-        with open(svg_path, "r") as svg_file:
-            svg_content = svg_file.read()
-
-        # Clean up
-        os.remove(svg_path)
-        return svg_content
-
-    # Callback for Phylogenetic Tree Visualization (Cytoscape-based)
     @app.callback(
-        Output('phylo-tree', 'elements'),
-        Output('phylo-tree', 'stylesheet'),
-        Input('upload-tree', 'contents'),
-        State('upload-tree', 'filename')
+        Output('tree-graph-container', 'children'),
+        [Input('upload-tree', 'contents'), Input('upload-metadata', 'contents')],
+        [State('upload-tree', 'filename'), State('upload-metadata', 'filename')]
     )
-    def display_tree_cytoscape(file_contents, file_name):
-        if file_contents:
-            if file_name.endswith('.tree') or file_name.endswith('.nwk'):
-                content_type, content_string = file_contents.split(',')
-                decoded = base64.b64decode(content_string).decode('utf-8')
-
-                # Parse the Newick file
-                tree = Phylo.read(StringIO(decoded), "newick")
-                elements = []
-
-                # Traverse the tree and create Cytoscape elements
-                def add_clade(clade, parent=None, depth=0):
-                    node_id = str(id(clade))  # Unique ID for each clade
-                    label = clade.name if clade.name else f"Node {depth}"
-                    elements.append({'data': {'id': node_id, 'label': label}})
-                    if parent:
-                        elements.append({'data': {'source': parent, 'target': node_id}})
-                    for child in clade.clades:
-                        add_clade(child, node_id, depth + 1)
-
-                add_clade(tree.root)
-
-                # Define styles mimicking ggtree
-                stylesheet = [
-                    {
-                        'selector': 'node',
-                        'style': {
-                            'label': 'data(label)',
-                            'shape': 'circle',
-                            'background-color': 'blue',
-                            'width': '10px',
-                            'height': '10px',
-                            'font-size': '12px',
-                            'text-valign': 'center',
-                            'color': 'white'
-                        }
-                    },
-                    {
-                        'selector': 'edge',
-                        'style': {
-                            'line-color': '#888',
-                            'width': 2,
-                            'target-arrow-shape': 'triangle'
-                        }
-                    }
-                ]
-
-                # Add custom styling for specific clades or metadata
-                if tree.root.clades:
-                    for idx, clade in enumerate(tree.root.clades[:5]):  # Example: Style top 5 clades
-                        stylesheet.append({
-                            'selector': f'[id = "{id(clade)}"]',
-                            'style': {
-                                'background-color': f'rgb({50 * idx}, {100 + 10 * idx}, {150 - 10 * idx})',
-                                'width': '15px',
-                                'height': '15px'
-                            }
-                        })
-
-                return elements, stylesheet
-
-        return [], []
-
-    # Callback for Phylogenetic Tree Visualization (SVG-based)
-    @app.callback(
-        Output('phylo-tree-container', 'children'),
-        Input('upload-tree', 'contents')
-    )
-    def display_tree_svg(file_contents):
-        if file_contents:
+    def update_tree(tree_contents, metadata_contents, tree_filename, metadata_filename):
+        if tree_contents and metadata_contents:
             try:
-                svg_content = render_phylogenetic_tree_to_svg(file_contents)
-                return html.Div(
-                    html.ObjectEl(id="tree-svg", data="data:image/svg+xml;base64," + base64.b64encode(svg_content.encode()).decode(), type="image/svg+xml"),
-                    style={"textAlign": "center"}
-                )
+                tree_data = base64.b64decode(tree_contents.split(",", 1)[1]).decode("utf-8")
+                metadata_data = base64.b64decode(metadata_contents.split(",", 1)[1]).decode("utf-8")
+                tree_file = "uploaded_tree.tree"
+                metadata_file = "uploaded_metadata.tsv"
+
+                with open(tree_file, "w") as f:
+                    f.write(tree_data)
+
+                with open(metadata_file, "w") as f:
+                    f.write(metadata_data)
+
+                fig = create_tree_plot(tree_file, metadata_file)
+                return dcc.Graph(figure=fig)
             except Exception as e:
-                return html.Div(f"Error processing tree file: {str(e)}", className="text-danger")
-        return html.Div("No tree file uploaded yet.", className="text-warning")
+                return html.Div(f"An error occurred: {str(e)}", className="text-danger")
+        return html.Div("Please upload both a tree file and a metadata file.", className="text-warning")
