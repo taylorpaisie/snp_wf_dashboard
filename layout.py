@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 # Define the layout
 app_layout = dbc.Container([
     dbc.NavbarSimple(
-        brand="Phylogenetic Workflow Dashboard",
+        brand="SNP Workflow Dashboard",
         brand_href="#",
         color="primary",
         dark=True,
