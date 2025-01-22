@@ -4,7 +4,7 @@ from layout import app_layout
 import callbacks
 
 # Initialize app
-app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
+app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 app.layout = app_layout
 server = app.server  # For deployment
 
