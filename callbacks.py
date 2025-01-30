@@ -1,13 +1,14 @@
-import base64
-from dash import Input, Output, State, html
+import base64, io
+from dash import Input, Output, State, dcc, html
 from dash.exceptions import PreventUpdate
 import plotly.graph_objs as go
 from Bio import Phylo
 from io import StringIO
 import pandas as pd
-from dash import dcc
 from dash_bio.utils import PdbParser
 from dash_bio import AlignmentChart
+import plotly.express as px
+from dash import dash_table
 
 
 def get_rectangular_coordinates(tree):
@@ -219,3 +220,66 @@ def register_callbacks(app):
             except Exception as e:
                 return html.Div(f"An error occurred: {str(e)}", className="text-danger")
         return html.Div("Please upload both a tree file and a metadata file.", className="text-warning")
+
+    @app.callback(
+        [Output('snp-heatmap-container', 'children'),
+         Output('snp-table-container', 'children')],  # New Output for DataTable
+        Input('upload-snp-matrix', 'contents'),
+        State('upload-snp-matrix', 'filename')
+    )
+    def update_snp_heatmap(file_contents, file_name):
+        if not file_contents:
+            return html.Div("No file uploaded yet.", className="text-warning"), html.Div()
+
+        try:
+            # Decode the uploaded file
+            content_type, content_string = file_contents.split(',')
+            decoded = base64.b64decode(content_string)
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), sep='\t')
+
+            # ✅ Rename first column dynamically
+            first_column_name = df.columns[0]
+            df.rename(columns={first_column_name: "Sample"}, inplace=True)
+
+            # ✅ Melt DataFrame correctly
+            df_melted = df.melt(id_vars=["Sample"], var_name="Variable", value_name="Value")
+
+            # ✅ Ensure pivot table is properly formed
+            if not df_melted["Variable"].isin(df["Sample"]).all():
+                return html.Div("Error: Some column names do not match the sample names.", className="text-danger"), html.Div()
+
+            # ✅ Pivot DataFrame for heatmap
+            pivot_df = df_melted.pivot(index="Sample", columns="Variable", values="Value")
+
+            # ✅ Create the heatmap using Plotly
+            fig = px.imshow(
+                pivot_df,
+                color_continuous_scale='viridis',
+                labels={'color': 'SNP Distance'},
+                title="SNP Distance Heatmap"
+            )
+
+            # ✅ Make the plot larger
+            fig.update_layout(
+                xaxis=dict(tickangle=-45),
+                margin=dict(l=40, r=40, t=40, b=40),
+                width=1000,  # Set the width
+                height=800   # Set the height
+            )
+
+            heatmap_graph = dcc.Graph(figure=fig)
+
+            # ✅ Create DataTable
+            table = dash_table.DataTable(
+                data=df.to_dict("records"),  # Convert DataFrame to dictionary format
+                columns=[{"name": i, "id": i} for i in df.columns],  # Column names
+                page_size=10,  # Show 10 rows per page
+                style_table={'overflowX': 'auto'},  # Enable scrolling
+                style_header={'backgroundColor': 'lightgrey', 'fontWeight': 'bold', 'color': 'black'},  # ✅ Make header text black
+                style_cell={'textAlign': 'center', 'padding': '10px', 'color': 'black'},  # ✅ Make all table text black
+            )
+
+            return heatmap_graph, table  # Return both the heatmap and the DataTable
+
+        except Exception as e:
+            return html.Div(f"Error processing file: {str(e)}", className="text-danger"), html.Div()

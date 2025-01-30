@@ -83,6 +83,40 @@ app_layout = dbc.Container([
                     ], width=12)
                 ])
             ])
+        ]),
+
+        # New Tab for SNP Distance Heatmap
+# Tab for SNP Distance Heatmap
+        dcc.Tab(label='SNP Distance Heatmap', children=[
+            dbc.Container([
+                dbc.Row([
+                    dbc.Col(html.H5("Upload SNP Distance Matrix to Generate Heatmap", className="text-center text-secondary mb-4"))
+                ]),
+                dbc.Row([
+                    dbc.Col([
+                        dcc.Upload(
+                            id='upload-snp-matrix',
+                            children=dbc.Button("Select SNP Matrix File", color="primary", className="mt-2"),
+                            style={
+                                'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                'textAlign': 'center', 'margin': '10px'
+                            },
+                            multiple=False
+                        ),
+                        html.Div(id='snp-heatmap-container', className="mt-4"),  # Heatmap
+                        html.Hr(),  # Add a horizontal separator
+                        html.H5("SNP Distance Matrix Table", className="text-center text-secondary mt-4"),
+                        html.Div(id='snp-table-container', className="mt-4"),  # DataTable Container
+                    ], width=12)
+                ])
+            ])
         ])
-    ])
+    ],
+    colors={
+        "border": "black",      # ✅ Make tab borders black
+        "primary": "black",      # ✅ Make selected tab text black
+        "background": "lightgrey"  # ✅ Make unselected tab background light grey for contrast
+    }
+    )
 ], fluid=True)
