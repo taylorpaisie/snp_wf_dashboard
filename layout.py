@@ -116,7 +116,7 @@ app_layout = dbc.Container([
     colors={
         "border": "black",      # ✅ Make tab borders black
         "primary": "black",      # ✅ Make selected tab text black
-        "background": "lightgrey"  # ✅ Make unselected tab background light grey for contrast
+        "background": "grey"  # ✅ Make unselected tab background light grey for contrast
     }
     )
 ], fluid=True)
