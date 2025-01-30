@@ -254,7 +254,7 @@ def register_callbacks(app):
             # ✅ Create the heatmap using Plotly
             fig = px.imshow(
                 pivot_df,
-                color_continuous_scale='viridis',
+                color_continuous_scale='rainbow',
                 labels={'color': 'SNP Distance'},
                 title="SNP Distance Heatmap"
             )
