@@ -19,7 +19,7 @@ app_layout = dbc.Container([
                 dbc.Row([
                     dbc.Col([
                         dcc.Upload(
-                            id='upload-fasta',
+                            id='upload-fasta',  # ✅ This ID must match the callback in callbacks.py
                             children=dbc.Button("Select FASTA File", color="primary", className="mt-2"),
                             style={
                                 'width': '100%', 'height': '60px', 'lineHeight': '60px',
@@ -28,7 +28,7 @@ app_layout = dbc.Container([
                             },
                             multiple=False
                         ),
-                        html.Div(id='output-alignment-chart', className="mt-4"),
+                        html.Div(id='output-alignment-chart', className="mt-4", style={"border": "2px solid red"}),
                         dcc.Dropdown(
                             id='alignment-colorscale',
                             options=[
@@ -40,6 +40,7 @@ app_layout = dbc.Container([
                             placeholder="Select Color Scale",
                             className="mt-2"
                         ),
+                        dbc.Button("Test Callback", id="test-button", color="danger", className="mt-2"),
                     ], width=12)
                 ])
             ])

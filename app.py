@@ -1,19 +1,24 @@
 from dash import Dash
 import dash_bootstrap_components as dbc
 from layout import app_layout
-import callbacks
+import callbacks 
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 # Initialize app
 app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 
-# ✅ Allow dynamically loaded components
-app.config.suppress_callback_exceptions = True  
+# ❌ REMOVE suppress_callback_exceptions
+# app.config.suppress_callback_exceptions = True  ❌ REMOVE this line!
+
 
 app.layout = app_layout
-server = app.server  # For deployment
 
-# Import callbacks (ensures they're registered)
+# ✅ Register callbacks
 callbacks.register_callbacks(app)
 
+server = app.server  # For deployment
+
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8051)

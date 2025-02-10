@@ -1,15 +1,15 @@
-import base64, io, json
+import base64, io, json, re
 from dash import Input, Output, State, dcc, html
 from dash.exceptions import PreventUpdate
 import plotly.graph_objs as go
-from Bio import Phylo
+from Bio import Phylo, SeqIO  # ✅ Add SeqIO here
 from io import StringIO
 import pandas as pd
-from dash_bio.utils import PdbParser
-from dash_bio import AlignmentChart
+import dash_bio as dashbio
 import plotly.express as px
 from dash import dash_table
 import phylo_map
+
 
 
 def get_rectangular_coordinates(tree):
@@ -153,8 +153,6 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels):
 
     return go.Figure(data=tip_markers, layout=layout)
 
-
-
 def register_callbacks(app):
     # Callback for MSA display
     @app.callback(
@@ -173,7 +171,7 @@ def register_callbacks(app):
 
                 if file_name.endswith('.fasta'):
                     # Render the AlignmentChart
-                    return AlignmentChart(
+                    return dashbio.AlignmentChart(
                         id='alignment-viewer',
                         data=decoded,
                         colorscale=colorscale if colorscale else 'nucleotide',
@@ -186,20 +184,7 @@ def register_callbacks(app):
                 return html.Div(f"An error occurred: {str(e)}", className="text-danger")
 
         return html.Div("No FASTA file uploaded yet.", className="text-warning")
-        
 
-    # Callback for phylogenetic tree visualization
-import json
-import base64
-import io
-from dash import html, dcc
-from dash.dependencies import Input, Output, State
-import phylo_map  # Ensure this is imported
-from Bio import Phylo
-import plotly.graph_objs as go
-import pandas as pd
-
-def register_callbacks(app):
 
     # Callback for Phylogenetic Tree Visualization
     @app.callback(
