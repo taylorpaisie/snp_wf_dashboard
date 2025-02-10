@@ -88,9 +88,9 @@ app_layout = dbc.Container([
                         dcc.Input(id="map-city", type="text", placeholder="e.g., New York", className="mb-2"),
                         
                         html.Label("Latitude:"),
-                        dcc.Input(id="map-lat", type="number", value=33.473499, step=0.0001, className="mb-2"),
+                        dcc.Input(id="map-lat", type="number", value=33, step=0.0001, className="mb-2"),
                         html.Label("Longitude:"),
-                        dcc.Input(id="map-lon", type="number", value=-82.010513, step=0.0001, className="mb-2"),
+                        dcc.Input(id="map-lon", type="number", value=-83, step=0.0001, className="mb-2"),
                         html.Label("Zoom Level:"),
                         dcc.Slider(
                             id="map-zoom",
