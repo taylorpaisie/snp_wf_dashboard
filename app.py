@@ -5,6 +5,10 @@ import callbacks
 
 # Initialize app
 app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
+
+# ✅ Allow dynamically loaded components
+app.config.suppress_callback_exceptions = True  
+
 app.layout = app_layout
 server = app.server  # For deployment
 

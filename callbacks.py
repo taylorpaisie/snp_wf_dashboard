@@ -1,4 +1,4 @@
-import base64, io
+import base64, io, json
 from dash import Input, Output, State, dcc, html
 from dash.exceptions import PreventUpdate
 import plotly.graph_objs as go
@@ -9,6 +9,7 @@ from dash_bio.utils import PdbParser
 from dash_bio import AlignmentChart
 import plotly.express as px
 from dash import dash_table
+import phylo_map
 
 
 def get_rectangular_coordinates(tree):
@@ -185,8 +186,22 @@ def register_callbacks(app):
                 return html.Div(f"An error occurred: {str(e)}", className="text-danger")
 
         return html.Div("No FASTA file uploaded yet.", className="text-warning")
+        
 
     # Callback for phylogenetic tree visualization
+import json
+import base64
+import io
+from dash import html, dcc
+from dash.dependencies import Input, Output, State
+import phylo_map  # Ensure this is imported
+from Bio import Phylo
+import plotly.graph_objs as go
+import pandas as pd
+
+def register_callbacks(app):
+
+    # Callback for Phylogenetic Tree Visualization
     @app.callback(
         Output('tree-graph-container', 'children'),
         [Input('upload-tree', 'contents'),
@@ -199,7 +214,6 @@ def register_callbacks(app):
         if tree_contents and metadata_contents:
             try:
                 # Decode tree and metadata files
-                import base64
                 tree_data = base64.b64decode(tree_contents.split(",", 1)[1]).decode("utf-8")
                 metadata_data = base64.b64decode(metadata_contents.split(",", 1)[1]).decode("utf-8")
                 tree_file = "uploaded_tree.tree"
@@ -214,12 +228,58 @@ def register_callbacks(app):
                 # Determine if tip labels should be shown
                 show_tip_labels = 'SHOW' in show_labels
 
-                # Generate the tree plot with the updated `create_tree_plot` function
+                # Generate the tree plot with `create_tree_plot`
                 fig = create_tree_plot(tree_file, metadata_file, show_tip_labels)
                 return dcc.Graph(figure=fig)
+
             except Exception as e:
-                return html.Div(f"An error occurred: {str(e)}", className="text-danger")
+                return html.Div(f"Error processing tree file: {str(e)}", className="text-danger")
         return html.Div("Please upload both a tree file and a metadata file.", className="text-warning")
+
+    # Callback for Folium Map Display
+    @app.callback(
+        Output('phylo-map-container', 'children'),
+        [
+            Input('upload-geojson', 'contents'),
+            Input('map-city', 'value'),  # ✅ New: City input
+            Input('map-lat', 'value'),
+            Input('map-lon', 'value'),
+            Input('map-zoom', 'value')
+        ],
+        State('upload-geojson', 'filename')
+    )
+    def display_folium_map(geojson_contents, city_name, latitude, longitude, zoom, geojson_filename):
+        geojson_data = None  # Default: No GeoJSON data
+
+        try:
+            # 🌍 If a GeoJSON file is uploaded, use it
+            if geojson_contents:
+                content_type, content_string = geojson_contents.split(',')
+                decoded = base64.b64decode(content_string).decode('utf-8')
+                geojson_data = json.loads(decoded)
+
+            # 📍 If no GeoJSON file is provided, but a city name is entered, get its coordinates
+            elif city_name:
+                geolocator = Nominatim(user_agent="dash-app")
+                location = geolocator.geocode(city_name)
+                if location:
+                    latitude = location.latitude
+                    longitude = location.longitude
+
+            # 🎯 Generate the map with either uploaded GeoJSON or city coordinates
+            folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom)
+
+            return html.Iframe(
+                srcDoc=folium_map_html,
+                width="100%",
+                height="500px",
+                style={"border": "none"}
+            )
+
+        except Exception as e:
+            return html.Div(f"Error processing input: {str(e)}", className="text-danger")
+
+
 
     @app.callback(
         [Output('snp-heatmap-container', 'children'),

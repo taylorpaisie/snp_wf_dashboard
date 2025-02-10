@@ -49,44 +49,80 @@ app_layout = dbc.Container([
         dcc.Tab(label='Phylogenetic Tree', children=[
             dbc.Container([
                 dbc.Row([
-                    dbc.Col(html.H5("Upload a Newick Tree File and Metadata File", className="text-center text-secondary mb-4"))
+                    dbc.Col(html.H5("Upload a Newick Tree File, Metadata File, and GeoJSON for Map", 
+                                    className="text-center text-secondary mb-4"))
                 ]),
+
+                # Upload Section
                 dbc.Row([
                     dbc.Col([
                         dcc.Upload(
                             id='upload-tree',
                             children=dbc.Button("Select Tree File", color="primary", className="mt-2"),
-                            style={
-                                'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                                'textAlign': 'center', 'margin': '10px'
-                            },
+                            style={'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                   'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                   'textAlign': 'center', 'margin': '10px'},
                             multiple=False
                         ),
                         dcc.Upload(
                             id='upload-metadata',
                             children=dbc.Button("Select Metadata File", color="primary", className="mt-2"),
-                            style={
-                                'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                                'textAlign': 'center', 'margin': '10px'
-                            },
+                            style={'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                   'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                   'textAlign': 'center', 'margin': '10px'},
                             multiple=False
                         ),
+                        dcc.Upload(
+                            id='upload-geojson',
+                            children=dbc.Button("Select GeoJSON File", color="primary", className="mt-2"),
+                            style={'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                   'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                   'textAlign': 'center', 'margin': '10px'},
+                            multiple=False
+                        ),
+                        html.Br(),
+
+                        # ✅ New: City Name Input
+                        html.Label("Enter a City Name:"),
+                        dcc.Input(id="map-city", type="text", placeholder="e.g., New York", className="mb-2"),
+                        
+                        html.Label("Latitude:"),
+                        dcc.Input(id="map-lat", type="number", value=33.473499, step=0.0001, className="mb-2"),
+                        html.Label("Longitude:"),
+                        dcc.Input(id="map-lon", type="number", value=-82.010513, step=0.0001, className="mb-2"),
+                        html.Label("Zoom Level:"),
+                        dcc.Slider(
+                            id="map-zoom",
+                            min=5, 
+                            max=20, 
+                            step=1, 
+                            value=12,  
+                            marks={i: str(i) for i in range(5, 21, 3)}
+                        ),
+                        html.Br(),
+                        # ✅ Tip Label Toggle
                         dcc.Checklist(
                             id='show-tip-labels',
                             options=[{'label': 'Show Tip Labels', 'value': 'SHOW'}],
-                            value=[],  # Default: labels off
+                            value=[],  
                             style={"marginTop": "10px"}
                         ),
-                        html.Div(id='tree-graph-container', className="mt-4")
                     ], width=12)
+                ]),
+
+                html.Hr(),  # Horizontal Line
+
+                # Row for Phylogenetic Tree and Map
+                dbc.Row([
+                    dbc.Col(html.Div(id='tree-graph-container'), width=6),  # Tree on the Left (50%)
+                    dbc.Col(html.Div(id='phylo-map-container'), width=6),  # Map on the Right (50%)
                 ])
             ])
         ]),
 
-        # New Tab for SNP Distance Heatmap
-# Tab for SNP Distance Heatmap
+
+
+        # Tab for SNP Distance Heatmap
         dcc.Tab(label='SNP Distance Heatmap', children=[
             dbc.Container([
                 dbc.Row([
