@@ -95,10 +95,10 @@ app_layout = dbc.Container([
                         html.Label("Zoom Level:"),
                         dcc.Slider(
                             id="map-zoom",
-                            min=5, 
-                            max=20, 
+                            min=1, 
+                            max=18, 
                             step=1, 
-                            value=12,  
+                            value=7,  
                             marks={i: str(i) for i in range(5, 21, 3)}
                         ),
                         html.Br(),

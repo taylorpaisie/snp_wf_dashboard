@@ -284,7 +284,8 @@ def register_callbacks(app):
         State('upload-geojson', 'filename')
     )
     def display_folium_map(geojson_contents, city_name, latitude, longitude, zoom, geojson_filename):
-        geojson_data = None  # Default: No GeoJSON data
+        geojson_data = None  
+
         try:
             # ✅ Load GeoJSON if provided
             if geojson_contents:
@@ -292,19 +293,17 @@ def register_callbacks(app):
                 decoded = base64.b64decode(content_string).decode('utf-8')
                 geojson_data = json.loads(decoded)
 
-            # ✅ Fetch city coordinates if a city name is entered
-            if city_name:
-                latitude, longitude, error_msg = get_city_coordinates(city_name)
-                if error_msg:
-                    return html.Div(error_msg, className="text-danger")
+            # ✅ Use user input latitude & longitude if provided
+            if latitude is None or longitude is None:
+                return html.Div("Please enter a valid latitude and longitude.", className="text-danger")
 
-            # ✅ Generate and display the Folium map
+            # ✅ Generate and display the Folium map using user-input coordinates
             folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom)
 
             return html.Iframe(
                 srcDoc=folium_map_html,
                 width="100%",
-                height="650px",
+                height="1000px",
                 style={"border": "none"}
             )
 
