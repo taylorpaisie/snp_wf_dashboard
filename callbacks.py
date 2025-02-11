@@ -36,6 +36,7 @@ http = urllib3.PoolManager(cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 load_dotenv()
+print(f"Loaded API Key: {os.getenv('OPENCAGE_API_KEY')}")
 
 def get_city_coordinates(city_name):
     """Fetch city coordinates using OpenCage API (alpythonternative to OpenStreetMap)."""
