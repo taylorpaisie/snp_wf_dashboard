@@ -15,7 +15,8 @@ from dash import Input, Output, State, dcc, html, dash_table
 from dash.exceptions import PreventUpdate
 import dash_bio as dashbio
 import phylo_map
-from Bio import Phylo, SeqIO  
+from Bio import Phylo, SeqIO
+from dotenv import load_dotenv  
 
 # Geopy (for geocoding city names)
 import geopy.geocoders
@@ -34,9 +35,13 @@ http = urllib3.PoolManager(cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 # ✅ Suppress SSL warnings (prevents flooding logs with SSL errors)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+load_dotenv()
+
 def get_city_coordinates(city_name):
-    """Fetch city coordinates using OpenCage API (alternative to OpenStreetMap)."""
-    api_key = "b0806eb26e9d48c5a666647dead79f83"  # 🔴 Replace with your OpenCage API Key
+    """Fetch city coordinates using OpenCage API (alpythonternative to OpenStreetMap)."""
+    api_key = os.getenv("OPENCAGE_API_KEY")  # Load from environment variable
+    if not api_key:
+        raise ValueError("Missing OpenCage API Key. Set the OPENCAGE_API_KEY environment variable.")
     base_url = "https://api.opencagedata.com/geocode/v1/json"
     params = {"q": city_name, "key": api_key, "limit": 1}
 
