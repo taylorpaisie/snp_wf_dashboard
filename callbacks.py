@@ -14,6 +14,7 @@ from io import StringIO
 from dash import Input, Output, State, dcc, html, dash_table
 from dash.exceptions import PreventUpdate
 import dash_bio as dashbio
+from dash import ctx
 import phylo_map
 from Bio import Phylo, SeqIO
 from dotenv import load_dotenv  
@@ -42,15 +43,16 @@ print(f"Loaded API Key: {os.getenv('OPENCAGE_API_KEY')}")
 MARKERS = []
 
 def get_city_coordinates(city_name):
-    """Fetch city coordinates using OpenCage API (alpythonternative to OpenStreetMap)."""
+    """Fetch city coordinates using OpenCage API."""
     api_key = os.getenv("OPENCAGE_API_KEY")  # Load from environment variable
     if not api_key:
-        raise ValueError("Missing OpenCage API Key. Set the OPENCAGE_API_KEY environment variable.")
+        return None, None, "⚠️ Missing OpenCage API Key."
+
     base_url = "https://api.opencagedata.com/geocode/v1/json"
     params = {"q": city_name, "key": api_key, "limit": 1}
 
     try:
-        response = requests.get(base_url, params=params, verify=certifi.where(), timeout=10)
+        response = requests.get(base_url, params=params, verify=False, timeout=10)  # ✅ Disable SSL verification
         response.raise_for_status()
 
         data = response.json()
@@ -59,10 +61,11 @@ def get_city_coordinates(city_name):
 
         lat = data["results"][0]["geometry"]["lat"]
         lon = data["results"][0]["geometry"]["lng"]
-        return float(lat), float(lon), None  # ✅ Success (latitude, longitude, no error)
+        return float(lat), float(lon), None  # ✅ Success
 
     except requests.exceptions.RequestException as e:
         return None, None, f"⚠️ Error fetching city coordinates: {str(e)}"
+
 
 
 def get_rectangular_coordinates(tree):
@@ -279,6 +282,7 @@ def register_callbacks(app):
     @app.callback(
         Output('phylo-map-container', 'children'),
         [Input('upload-geojson', 'contents'),
+        Input('map-city', 'value'),  # Added city name input
         Input('map-lat', 'value'),
         Input('map-lon', 'value'),
         Input('map-zoom', 'value'),
@@ -287,21 +291,29 @@ def register_callbacks(app):
         State('marker-lat', 'value'),
         State('marker-lon', 'value')]
     )
-    def update_folium_map(geojson_contents, latitude, longitude, zoom, n_clicks, marker_name, marker_lat, marker_lon):
-        global MARKERS  # Use the global variable
+    def update_folium_map(geojson_contents, city_name, latitude, longitude, zoom, n_clicks, marker_name, marker_lat, marker_lon):
+        global MARKERS  # Use global storage for markers
 
-        # Decode GeoJSON if uploaded
+        # ✅ 1. Convert city name to coordinates if provided
+        if city_name:
+            geocoded_lat, geocoded_lon, error_msg = get_city_coordinates(city_name)
+            if geocoded_lat and geocoded_lon:
+                latitude, longitude = geocoded_lat, geocoded_lon
+            else:
+                return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
+
+        # ✅ 2. Decode GeoJSON if uploaded
         geojson_data = None
         if geojson_contents:
             content_type, content_string = geojson_contents.split(',')
             decoded = base64.b64decode(content_string).decode('utf-8')
             geojson_data = json.loads(decoded)
 
-        # Add new marker if button is clicked and inputs are provided
-        if n_clicks and marker_name and marker_lat and marker_lon:
+        # ✅ 3. Add new marker if button clicked
+        if ctx.triggered_id == "add-marker-btn" and marker_name and marker_lat and marker_lon:
             MARKERS.append({"name": marker_name, "lat": float(marker_lat), "lon": float(marker_lon)})
 
-        # Generate the updated map with new markers
+        # ✅ 4. Generate updated Folium map
         folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom, MARKERS)
 
         return html.Iframe(
@@ -310,8 +322,6 @@ def register_callbacks(app):
             height="1000px",
             style={"border": "none"}
         )
-
-
 
 
     @app.callback(
