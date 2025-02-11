@@ -7,4 +7,4 @@ gunicorn
 openpyxl
 folium
 geopy
-dotenv
+python-dotenv
