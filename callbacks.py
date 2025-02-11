@@ -38,6 +38,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 load_dotenv()
 print(f"Loaded API Key: {os.getenv('OPENCAGE_API_KEY')}")
 
+# Store Markers in Memory
+MARKERS = []
+
 def get_city_coordinates(city_name):
     """Fetch city coordinates using OpenCage API (alpythonternative to OpenStreetMap)."""
     api_key = os.getenv("OPENCAGE_API_KEY")  # Load from environment variable
@@ -272,43 +275,42 @@ def register_callbacks(app):
         return html.Div("Please upload both a tree file and a metadata file.", className="text-warning")
 
     # Callback for Folium Map Display
+
     @app.callback(
         Output('phylo-map-container', 'children'),
-        [
-            Input('upload-geojson', 'contents'),
-            Input('map-city', 'value'),
-            Input('map-lat', 'value'),
-            Input('map-lon', 'value'),
-            Input('map-zoom', 'value')
-        ],
-        State('upload-geojson', 'filename')
+        [Input('upload-geojson', 'contents'),
+        Input('map-lat', 'value'),
+        Input('map-lon', 'value'),
+        Input('map-zoom', 'value'),
+        Input('add-marker-btn', 'n_clicks')],
+        [State('marker-name', 'value'),
+        State('marker-lat', 'value'),
+        State('marker-lon', 'value')]
     )
-    def display_folium_map(geojson_contents, city_name, latitude, longitude, zoom, geojson_filename):
-        geojson_data = None  
+    def update_folium_map(geojson_contents, latitude, longitude, zoom, n_clicks, marker_name, marker_lat, marker_lon):
+        global MARKERS  # Use the global variable
 
-        try:
-            # ✅ Load GeoJSON if provided
-            if geojson_contents:
-                content_type, content_string = geojson_contents.split(',')
-                decoded = base64.b64decode(content_string).decode('utf-8')
-                geojson_data = json.loads(decoded)
+        # Decode GeoJSON if uploaded
+        geojson_data = None
+        if geojson_contents:
+            content_type, content_string = geojson_contents.split(',')
+            decoded = base64.b64decode(content_string).decode('utf-8')
+            geojson_data = json.loads(decoded)
 
-            # ✅ Use user input latitude & longitude if provided
-            if latitude is None or longitude is None:
-                return html.Div("Please enter a valid latitude and longitude.", className="text-danger")
+        # Add new marker if button is clicked and inputs are provided
+        if n_clicks and marker_name and marker_lat and marker_lon:
+            MARKERS.append({"name": marker_name, "lat": float(marker_lat), "lon": float(marker_lon)})
 
-            # ✅ Generate and display the Folium map using user-input coordinates
-            folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom)
+        # Generate the updated map with new markers
+        folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom, MARKERS)
 
-            return html.Iframe(
-                srcDoc=folium_map_html,
-                width="100%",
-                height="1000px",
-                style={"border": "none"}
-            )
+        return html.Iframe(
+            srcDoc=folium_map_html,
+            width="100%",
+            height="1000px",
+            style={"border": "none"}
+        )
 
-        except Exception as e:
-            return html.Div(f"⚠️ Error processing input: {str(e)}", className="text-danger")
 
 
 

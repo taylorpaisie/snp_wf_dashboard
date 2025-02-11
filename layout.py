@@ -109,6 +109,26 @@ app_layout = dbc.Container([
                             value=[],  
                             style={"marginTop": "10px"}
                         ),
+                        html.Br(),
+                        html.H5("Add Custom Marker", className="text-center text-secondary mt-4"),
+                        dbc.Row([
+                            dbc.Col([
+                                html.Label("Marker Name:"),
+                                dcc.Input(id="marker-name", type="text", placeholder="Enter marker name", className="mb-2"),
+                            ], width=3),
+                            dbc.Col([
+                                html.Label("Latitude:"),
+                                dcc.Input(id="marker-lat", type="number", placeholder="Enter latitude", className="mb-2"),
+                            ], width=3),
+                            dbc.Col([
+                                html.Label("Longitude:"),
+                                dcc.Input(id="marker-lon", type="number", placeholder="Enter longitude", className="mb-2"),
+                            ], width=3),
+                            dbc.Col([
+                                dbc.Button("Add Marker", id="add-marker-btn", color="success", className="mt-4"),
+                            ], width=3),
+                        ]),
+                        html.Br(),
                     ], width=12)
                 ]),
 
