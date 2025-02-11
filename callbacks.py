@@ -1,15 +1,59 @@
-import base64, io, json, re
-from dash import Input, Output, State, dcc, html
-from dash.exceptions import PreventUpdate
-import plotly.graph_objs as go
-from Bio import Phylo, SeqIO  # ✅ Add SeqIO here
-from io import StringIO
+import base64
+import io
+import json
+import re
+import ssl
+import certifi
+import os
+import requests
+import urllib3
 import pandas as pd
-import dash_bio as dashbio
 import plotly.express as px
-from dash import dash_table
+import plotly.graph_objs as go
+from io import StringIO
+from dash import Input, Output, State, dcc, html, dash_table
+from dash.exceptions import PreventUpdate
+import dash_bio as dashbio
 import phylo_map
+from Bio import Phylo, SeqIO  
 
+# Geopy (for geocoding city names)
+import geopy.geocoders
+from geopy.geocoders import Nominatim
+
+# ✅ Force Python to use certifi's certificates
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['SSL_CERT_DIR'] = certifi.where()
+
+# ✅ Create an SSL context that explicitly uses certifi
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+# ✅ Configure urllib3 to use the correct SSL certificates
+http = urllib3.PoolManager(cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
+
+# ✅ Suppress SSL warnings (prevents flooding logs with SSL errors)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def get_city_coordinates(city_name):
+    """Fetch city coordinates using OpenCage API (alternative to OpenStreetMap)."""
+    api_key = "b0806eb26e9d48c5a666647dead79f83"  # 🔴 Replace with your OpenCage API Key
+    base_url = "https://api.opencagedata.com/geocode/v1/json"
+    params = {"q": city_name, "key": api_key, "limit": 1}
+
+    try:
+        response = requests.get(base_url, params=params, verify=certifi.where(), timeout=10)
+        response.raise_for_status()
+
+        data = response.json()
+        if not data["results"]:
+            return None, None, "⚠️ City not found. Please enter a valid city name."
+
+        lat = data["results"][0]["geometry"]["lat"]
+        lon = data["results"][0]["geometry"]["lng"]
+        return float(lat), float(lon), None  # ✅ Success (latitude, longitude, no error)
+
+    except requests.exceptions.RequestException as e:
+        return None, None, f"⚠️ Error fetching city coordinates: {str(e)}"
 
 
 def get_rectangular_coordinates(tree):
@@ -226,7 +270,7 @@ def register_callbacks(app):
         Output('phylo-map-container', 'children'),
         [
             Input('upload-geojson', 'contents'),
-            Input('map-city', 'value'),  # ✅ New: City input
+            Input('map-city', 'value'),
             Input('map-lat', 'value'),
             Input('map-lon', 'value'),
             Input('map-zoom', 'value')
@@ -235,34 +279,31 @@ def register_callbacks(app):
     )
     def display_folium_map(geojson_contents, city_name, latitude, longitude, zoom, geojson_filename):
         geojson_data = None  # Default: No GeoJSON data
-
         try:
-            # 🌍 If a GeoJSON file is uploaded, use it
+            # ✅ Load GeoJSON if provided
             if geojson_contents:
                 content_type, content_string = geojson_contents.split(',')
                 decoded = base64.b64decode(content_string).decode('utf-8')
                 geojson_data = json.loads(decoded)
 
-            # 📍 If no GeoJSON file is provided, but a city name is entered, get its coordinates
-            elif city_name:
-                geolocator = Nominatim(user_agent="dash-app")
-                location = geolocator.geocode(city_name)
-                if location:
-                    latitude = location.latitude
-                    longitude = location.longitude
+            # ✅ Fetch city coordinates if a city name is entered
+            if city_name:
+                latitude, longitude, error_msg = get_city_coordinates(city_name)
+                if error_msg:
+                    return html.Div(error_msg, className="text-danger")
 
-            # 🎯 Generate the map with either uploaded GeoJSON or city coordinates
+            # ✅ Generate and display the Folium map
             folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom)
 
             return html.Iframe(
                 srcDoc=folium_map_html,
                 width="100%",
-                height="500px",
+                height="650px",
                 style={"border": "none"}
             )
 
         except Exception as e:
-            return html.Div(f"Error processing input: {str(e)}", className="text-danger")
+            return html.Div(f"⚠️ Error processing input: {str(e)}", className="text-danger")
 
 
 

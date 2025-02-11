@@ -1,7 +1,7 @@
 import folium
 import json
 
-def generate_folium_map(geojson_data=None, latitude=33.473499, longitude=-82.010513, zoom=12):
+def generate_folium_map(geojson_data=None, latitude=32, longitude=-83, zoom=7):
     """Generates a Folium map using an uploaded GeoJSON or a manual city location."""
     
     attr = ('&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> '
