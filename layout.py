@@ -38,7 +38,8 @@ app_layout = dbc.Container([
                             ],
                             value='nucleotide',
                             placeholder="Select Color Scale",
-                            className="mt-2"
+                            className="mt-2",
+                            style={'color': 'black', 'backgroundColor': 'white'}
                         ),
                         dbc.Button("Test Callback", id="test-button", color="danger", className="mt-2"),
                     ], width=12)
