@@ -143,12 +143,12 @@ app_layout = dbc.Container([
         ]),
 
         # Tab for Standalone Map
+# Tab for Standalone Map
         dcc.Tab(label='Standalone Map Viewer', children=[
             dbc.Container([
                 dbc.Row([
                     dbc.Col(html.H5("Upload GeoJSON or Search for a Location", className="text-center text-secondary mb-4"))
                 ]),
-                
 
                 # Upload GeoJSON
                 dbc.Row([
@@ -164,9 +164,6 @@ app_layout = dbc.Container([
                             multiple=False
                         ),
                         html.Div(id="standalone-geojson-upload-status", className="mt-2 text-success"),
-
-
-
                     ], width=12)
                 ]),
 
@@ -184,12 +181,30 @@ app_layout = dbc.Container([
 
                 html.Hr(),
 
+                # ✅ Zoom Slider
+                dbc.Row([
+                    dbc.Col([
+                        html.Label("Zoom Level:"),
+                        dcc.Slider(
+                            id="standalone-map-zoom",
+                            min=1, 
+                            max=18, 
+                            step=1, 
+                            value=6,  # Default zoom level
+                            marks={i: str(i) for i in range(1, 19, 3)}
+                        ),
+                    ], width=12)
+                ]),
+
+                html.Hr(),
+
                 # Standalone Map Display
                 dbc.Row([
                     dbc.Col(html.Div(id='standalone-map-container', style={'height': '600px'}), width=12)
                 ])
             ])
         ]),
+
 
 
         # Tab for SNP Distance Heatmap

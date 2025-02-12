@@ -327,12 +327,13 @@ def register_callbacks(app):
     @app.callback(
         Output('standalone-map-container', 'children'),
         [Input('upload-standalone-geojson', 'contents'),
-        Input('search-standalone-city-btn', 'n_clicks')],
+        Input('search-standalone-city-btn', 'n_clicks'),
+        Input('standalone-map-zoom', 'value')],  # ✅ New Zoom Input
         [State('upload-standalone-geojson', 'filename'),
         State('search-standalone-city', 'value')]
     )
-    def update_standalone_map(geojson_contents, n_clicks, filename, city_name):
-        """Update Standalone Folium map based on GeoJSON upload or city search."""
+    def update_standalone_map(geojson_contents, n_clicks, zoom, filename, city_name):
+        """Update Standalone Folium map based on GeoJSON upload, city search, and zoom level."""
         
         latitude, longitude, error_msg = 30, -80, None  # Default location
 
@@ -354,8 +355,8 @@ def register_callbacks(app):
             except Exception as e:
                 return html.Div(f"⚠️ Error parsing GeoJSON: {str(e)}", className="text-danger")
 
-        # ✅ Generate Standalone Map (Different from Tree Map)
-        standalone_map_html = phylo_map.generate_standalone_map(geojson_data, latitude, longitude, zoom=6)
+        # ✅ Generate Standalone Map with Zoom
+        standalone_map_html = phylo_map.generate_standalone_map(geojson_data, latitude, longitude, zoom)
 
         return html.Iframe(
             srcDoc=standalone_map_html,
@@ -363,6 +364,7 @@ def register_callbacks(app):
             height="600px",
             style={"border": "none"}
         )
+
 
 
     @app.callback(
