@@ -335,7 +335,7 @@ def register_callbacks(app):
     def update_standalone_map(geojson_contents, n_clicks, zoom, filename, city_name):
         """Update Standalone Folium map based on GeoJSON upload, city search, and zoom level."""
         
-        latitude, longitude, error_msg = 30, -80, None  # Default location
+        latitude, longitude, error_msg = 40.650002, -73.949997, None  # Default location
 
         # ✅ Handle city name search separately
         if ctx.triggered_id == "search-standalone-city-btn" and city_name:

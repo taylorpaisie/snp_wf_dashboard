@@ -1,7 +1,7 @@
 import folium
 import json
 
-def generate_folium_map(geojson_data=None, latitude=30, longitude=-80, zoom=6, markers=[]):
+def generate_folium_map(geojson_data=None, latitude=40.650002, longitude=-73.949997, zoom=6, markers=[]):
     """Generates a Folium map with optional markers."""
     
     attr = ('&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> '
@@ -64,7 +64,7 @@ def generate_standalone_map(geojson_data=None, latitude=30, longitude=-80, zoom=
     # ✅ Add GeoJSON layer if provided
     if geojson_data:
         folium.GeoJson(geojson_data, style_function=lambda x: {
-            'color': 'green', 'fillColor': 'lightgreen', 'fillOpacity': 0.4
+            'color': 'lightgray', 'fillColor': 'lightgray', 'fillOpacity': 0.4
         }).add_to(m)
 
     # ✅ Add a different marker style

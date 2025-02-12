@@ -14,7 +14,7 @@ app_layout = dbc.Container([
         dcc.Tab(label='MSA Visualization', children=[
             dbc.Container([
                 dbc.Row([
-                    dbc.Col(html.H5("Upload a FASTA File to Visualize MSA", className="text-center text-secondary mb-4"))
+                    dbc.Col(html.H5("Upload a FASTA File to Visualize MSA",  className="text-center", style={'color': 'white'}))
                 ]),
                 dbc.Row([
                     dbc.Col([
@@ -51,8 +51,7 @@ app_layout = dbc.Container([
         dcc.Tab(label='Phylogenetic Tree', children=[
             dbc.Container([
                 dbc.Row([
-                    dbc.Col(html.H5("Upload a Newick Tree File, Metadata File, and GeoJSON for Map", 
-                                    className="text-center text-secondary mb-4"))
+                    dbc.Col(html.H5("Upload a Newick Tree File, Metadata File, and GeoJSON for Map", className="text-center", style={'color': 'white'}))
                 ]),
 
                 # Upload Section
@@ -110,7 +109,7 @@ app_layout = dbc.Container([
                             style={"marginTop": "10px"}
                         ),
                         html.Br(),
-                        html.H5("Add Custom Marker", className="text-center text-secondary mt-4"),
+                        html.H5("Add Custom Marker", className="text-center mt-4", style={'color': 'white'}),
                         dbc.Row([
                             dbc.Col([
                                 html.Label("Marker Name:"),
@@ -143,11 +142,10 @@ app_layout = dbc.Container([
         ]),
 
         # Tab for Standalone Map
-# Tab for Standalone Map
-        dcc.Tab(label='Standalone Map Viewer', children=[
+        dcc.Tab(label='Map Viewer', children=[
             dbc.Container([
                 dbc.Row([
-                    dbc.Col(html.H5("Upload GeoJSON or Search for a Location", className="text-center text-secondary mb-4"))
+                    dbc.Col(html.H5("Upload GeoJSON or Search for a Location", className="text-center", style={'color': 'white'}))
                 ]),
 
                 # Upload GeoJSON
@@ -211,7 +209,7 @@ app_layout = dbc.Container([
         dcc.Tab(label='SNP Distance Heatmap', children=[
             dbc.Container([
                 dbc.Row([
-                    dbc.Col(html.H5("Upload SNP Distance Matrix to Generate Heatmap", className="text-center text-secondary mb-4"))
+                    dbc.Col(html.H5("Upload SNP Distance Matrix to Generate Heatmap", className="text-center", style={'color': 'white'}))
                 ]),
                 dbc.Row([
                     dbc.Col([
@@ -227,7 +225,7 @@ app_layout = dbc.Container([
                         ),
                         html.Div(id='snp-heatmap-container', className="mt-4"),  # Heatmap
                         html.Hr(),  # Add a horizontal separator
-                        html.H5("SNP Distance Matrix Table", className="text-center text-secondary mt-4"),
+                        html.H5("SNP Distance Matrix Table", className="text-center mt-4", style={'color': 'white'}),
                         html.Div(id='snp-table-container', className="mt-4"),  # DataTable Container
                     ], width=12)
                 ])
