@@ -323,6 +323,47 @@ def register_callbacks(app):
             style={"border": "none"}
         )
 
+    #standalone map tab
+    @app.callback(
+        Output('standalone-map-container', 'children'),
+        [Input('upload-standalone-geojson', 'contents'),
+        Input('search-standalone-city-btn', 'n_clicks')],
+        [State('upload-standalone-geojson', 'filename'),
+        State('search-standalone-city', 'value')]
+    )
+    def update_standalone_map(geojson_contents, n_clicks, filename, city_name):
+        """Update Standalone Folium map based on GeoJSON upload or city search."""
+        
+        latitude, longitude, error_msg = 30, -80, None  # Default location
+
+        # ✅ Handle city name search separately
+        if ctx.triggered_id == "search-standalone-city-btn" and city_name:
+            lat, lon, error_msg = get_city_coordinates(city_name)
+            if lat and lon:
+                latitude, longitude = lat, lon
+            else:
+                return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
+
+        # ✅ Handle GeoJSON Upload
+        geojson_data = None
+        if geojson_contents:
+            try:
+                content_type, content_string = geojson_contents.split(',')
+                decoded = base64.b64decode(content_string).decode('utf-8')
+                geojson_data = json.loads(decoded)
+            except Exception as e:
+                return html.Div(f"⚠️ Error parsing GeoJSON: {str(e)}", className="text-danger")
+
+        # ✅ Generate Standalone Map (Different from Tree Map)
+        standalone_map_html = phylo_map.generate_standalone_map(geojson_data, latitude, longitude, zoom=6)
+
+        return html.Iframe(
+            srcDoc=standalone_map_html,
+            width="100%",
+            height="600px",
+            style={"border": "none"}
+        )
+
 
     @app.callback(
         [Output('snp-heatmap-container', 'children'),

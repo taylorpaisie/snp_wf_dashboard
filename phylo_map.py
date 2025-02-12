@@ -56,3 +56,25 @@ def generate_folium_map(geojson_data=None, latitude=30, longitude=-80, zoom=6, m
 
     return m._repr_html_()
 
+def generate_standalone_map(geojson_data=None, latitude=30, longitude=-80, zoom=6):
+    """Generates a completely independent Folium map for the standalone viewer."""
+    
+    m = folium.Map(location=[latitude, longitude], 
+        zoom_start=zoom, tiles="CartoDB positron")
+
+    # ✅ Add GeoJSON layer if provided
+    if geojson_data:
+        folium.GeoJson(geojson_data, style_function=lambda x: {
+            'color': 'green', 'fillColor': 'lightgreen', 'fillOpacity': 0.4
+        }).add_to(m)
+
+    # ✅ Add a different marker style
+    folium.Marker(
+        location=[latitude, longitude],
+        popup="Standalone Location",
+        icon=folium.Icon(color="darkblue", icon="map-marker"),
+    ).add_to(m)
+
+    return m._repr_html_()
+
+
