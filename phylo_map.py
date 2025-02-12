@@ -16,19 +16,43 @@ def generate_folium_map(geojson_data=None, latitude=30, longitude=-80, zoom=6, m
         }).add_to(m)
 
     # ✅ Add default marker
-    folium.Marker(
+    # folium.Marker(
+    #     location=[latitude, longitude],
+    #     popup="Selected Location",
+    #     icon=folium.Icon(color="blue", icon="info-sign"),
+    # ).add_to(m)
+
+        # ✅ Add user-defined markers
+    # for marker in markers:
+    #     folium.CircleMarker(
+    #         location=[marker["lat"], marker["lon"]],
+    #         popup=marker["name"],
+    #         icon=folium.Icon(color="red", icon="flag"),
+    #     ).add_to(m)
+
+    radium=30
+    folium.CircleMarker(
         location=[latitude, longitude],
         popup="Selected Location",
-        icon=folium.Icon(color="blue", icon="info-sign"),
+        color="black",
+        weight=1,
+        fill_opacity=0.6,
+        opacity=1,
+        fill_color="red",
     ).add_to(m)
 
     # ✅ Add user-defined markers
     for marker in markers:
-        folium.Marker(
+        folium.CircleMarker(
             location=[marker["lat"], marker["lon"]],
             popup=marker["name"],
-            icon=folium.Icon(color="red", icon="flag"),
+            color="black",
+            weight=1,
+            fill_opacity=0.6,
+            opacity=1,
+            fill_color="green",
         ).add_to(m)
+
 
     return m._repr_html_()
 
