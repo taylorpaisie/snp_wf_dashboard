@@ -148,6 +148,7 @@ app_layout = dbc.Container([
                 dbc.Row([
                     dbc.Col(html.H5("Upload GeoJSON or Search for a Location", className="text-center text-secondary mb-4"))
                 ]),
+                
 
                 # Upload GeoJSON
                 dbc.Row([
@@ -163,6 +164,9 @@ app_layout = dbc.Container([
                             multiple=False
                         ),
                         html.Div(id="standalone-geojson-upload-status", className="mt-2 text-success"),
+
+
+
                     ], width=12)
                 ]),
 

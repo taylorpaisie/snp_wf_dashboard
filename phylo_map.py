@@ -56,7 +56,7 @@ def generate_folium_map(geojson_data=None, latitude=30, longitude=-80, zoom=6, m
 
     return m._repr_html_()
 
-def generate_standalone_map(geojson_data=None, latitude=30, longitude=-80, zoom=6):
+def generate_standalone_map(geojson_data=None, latitude=33, longitude=-83, zoom=7):
     """Generates a completely independent Folium map for the standalone viewer."""
     
     m = folium.Map(location=[latitude, longitude], 
