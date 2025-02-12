@@ -68,10 +68,15 @@ def generate_standalone_map(geojson_data=None, latitude=30, longitude=-80, zoom=
         }).add_to(m)
 
     # ✅ Add a different marker style
-    folium.Marker(
+    radium=30
+    folium.CircleMarker(
         location=[latitude, longitude],
-        popup="Standalone Location",
-        icon=folium.Icon(color="darkblue", icon="map-marker"),
+        popup="Selected Location",
+        color="black",
+        weight=1,
+        fill_opacity=0.6,
+        opacity=1,
+        fill_color="red",
     ).add_to(m)
 
     return m._repr_html_()
