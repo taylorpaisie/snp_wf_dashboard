@@ -279,91 +279,91 @@ def register_callbacks(app):
 
     # Callback for Folium Map Display
 
-    @app.callback(
-        Output('phylo-map-container', 'children'),
-        [Input('upload-geojson', 'contents'),
-        Input('map-city', 'value'),  # Added city name input
-        Input('map-lat', 'value'),
-        Input('map-lon', 'value'),
-        Input('map-zoom', 'value'),
-        Input('add-marker-btn', 'n_clicks')],
-        [State('marker-name', 'value'),
-        State('marker-lat', 'value'),
-        State('marker-lon', 'value')]
-    )
-    def update_folium_map(geojson_contents, city_name, latitude, longitude, zoom, n_clicks, marker_name, marker_lat, marker_lon):
-        global MARKERS  # Use global storage for markers
+    # @app.callback(
+    #     Output('phylo-map-container', 'children'),
+    #     [Input('upload-geojson', 'contents'),
+    #     Input('map-city', 'value'),  # Added city name input
+    #     Input('map-lat', 'value'),
+    #     Input('map-lon', 'value'),
+    #     Input('map-zoom', 'value'),
+    #     Input('add-marker-btn', 'n_clicks')],
+    #     [State('marker-name', 'value'),
+    #     State('marker-lat', 'value'),
+    #     State('marker-lon', 'value')]
+    # )
+    # def update_folium_map(geojson_contents, city_name, latitude, longitude, zoom, n_clicks, marker_name, marker_lat, marker_lon):
+    #     global MARKERS  # Use global storage for markers
 
-        # ✅ 1. Convert city name to coordinates if provided
-        if city_name:
-            geocoded_lat, geocoded_lon, error_msg = get_city_coordinates(city_name)
-            if geocoded_lat and geocoded_lon:
-                latitude, longitude = geocoded_lat, geocoded_lon
-            else:
-                return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
+    #     # ✅ 1. Convert city name to coordinates if provided
+    #     if city_name:
+    #         geocoded_lat, geocoded_lon, error_msg = get_city_coordinates(city_name)
+    #         if geocoded_lat and geocoded_lon:
+    #             latitude, longitude = geocoded_lat, geocoded_lon
+    #         else:
+    #             return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
 
-        # ✅ 2. Decode GeoJSON if uploaded
-        geojson_data = None
-        if geojson_contents:
-            content_type, content_string = geojson_contents.split(',')
-            decoded = base64.b64decode(content_string).decode('utf-8')
-            geojson_data = json.loads(decoded)
+    #     # ✅ 2. Decode GeoJSON if uploaded
+    #     geojson_data = None
+    #     if geojson_contents:
+    #         content_type, content_string = geojson_contents.split(',')
+    #         decoded = base64.b64decode(content_string).decode('utf-8')
+    #         geojson_data = json.loads(decoded)
 
-        # ✅ 3. Add new marker if button clicked
-        if ctx.triggered_id == "add-marker-btn" and marker_name and marker_lat and marker_lon:
-            MARKERS.append({"name": marker_name, "lat": float(marker_lat), "lon": float(marker_lon)})
+    #     # ✅ 3. Add new marker if button clicked
+    #     if ctx.triggered_id == "add-marker-btn" and marker_name and marker_lat and marker_lon:
+    #         MARKERS.append({"name": marker_name, "lat": float(marker_lat), "lon": float(marker_lon)})
 
-        # ✅ 4. Generate updated Folium map
-        folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom, MARKERS)
+    #     # ✅ 4. Generate updated Folium map
+    #     folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom, MARKERS)
 
-        return html.Iframe(
-            srcDoc=folium_map_html,
-            width="100%",
-            height="1000px",
-            style={"border": "none"}
-        )
+    #     return html.Iframe(
+    #         srcDoc=folium_map_html,
+    #         width="100%",
+    #         height="1000px",
+    #         style={"border": "none"}
+    #     )
 
-    #standalone map tab
-    @app.callback(
-        Output('standalone-map-container', 'children'),
-        [Input('upload-standalone-geojson', 'contents'),
-        Input('search-standalone-city-btn', 'n_clicks'),
-        Input('standalone-map-zoom', 'value')],  # ✅ New Zoom Input
-        [State('upload-standalone-geojson', 'filename'),
-        State('search-standalone-city', 'value')]
-    )
-    def update_standalone_map(geojson_contents, n_clicks, zoom, filename, city_name):
-        """Update Standalone Folium map based on GeoJSON upload, city search, and zoom level."""
+    # #standalone map tab
+    # @app.callback(
+    #     Output('standalone-map-container', 'children'),
+    #     [Input('upload-standalone-geojson', 'contents'),
+    #     Input('search-standalone-city-btn', 'n_clicks'),
+    #     Input('standalone-map-zoom', 'value')],  # ✅ New Zoom Input
+    #     [State('upload-standalone-geojson', 'filename'),
+    #     State('search-standalone-city', 'value')]
+    # )
+    # def update_standalone_map(geojson_contents, n_clicks, zoom, filename, city_name):
+    #     """Update Standalone Folium map based on GeoJSON upload, city search, and zoom level."""
         
-        latitude, longitude, error_msg = 40.650002, -73.949997, None  # Default location
+    #     latitude, longitude, error_msg = 40.650002, -73.949997, None  # Default location
 
-        # ✅ Handle city name search separately
-        if ctx.triggered_id == "search-standalone-city-btn" and city_name:
-            lat, lon, error_msg = get_city_coordinates(city_name)
-            if lat and lon:
-                latitude, longitude = lat, lon
-            else:
-                return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
+    #     # ✅ Handle city name search separately
+    #     if ctx.triggered_id == "search-standalone-city-btn" and city_name:
+    #         lat, lon, error_msg = get_city_coordinates(city_name)
+    #         if lat and lon:
+    #             latitude, longitude = lat, lon
+    #         else:
+    #             return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
 
-        # ✅ Handle GeoJSON Upload
-        geojson_data = None
-        if geojson_contents:
-            try:
-                content_type, content_string = geojson_contents.split(',')
-                decoded = base64.b64decode(content_string).decode('utf-8')
-                geojson_data = json.loads(decoded)
-            except Exception as e:
-                return html.Div(f"⚠️ Error parsing GeoJSON: {str(e)}", className="text-danger")
+    #     # ✅ Handle GeoJSON Upload
+    #     geojson_data = None
+    #     if geojson_contents:
+    #         try:
+    #             content_type, content_string = geojson_contents.split(',')
+    #             decoded = base64.b64decode(content_string).decode('utf-8')
+    #             geojson_data = json.loads(decoded)
+    #         except Exception as e:
+    #             return html.Div(f"⚠️ Error parsing GeoJSON: {str(e)}", className="text-danger")
 
-        # ✅ Generate Standalone Map with Zoom
-        standalone_map_html = phylo_map.generate_standalone_map(geojson_data, latitude, longitude, zoom)
+    #     # ✅ Generate Standalone Map with Zoom
+    #     standalone_map_html = phylo_map.generate_standalone_map(geojson_data, latitude, longitude, zoom)
 
-        return html.Iframe(
-            srcDoc=standalone_map_html,
-            width="100%",
-            height="600px",
-            style={"border": "none"}
-        )
+    #     return html.Iframe(
+    #         srcDoc=standalone_map_html,
+    #         width="100%",
+    #         height="600px",
+    #         style={"border": "none"}
+    #     )
 
 
 
