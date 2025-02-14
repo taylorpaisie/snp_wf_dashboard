@@ -11,6 +11,19 @@ about_content = dbc.Container([
     html.P(
         "The MSA Visualization, Phylogenetic Tree Visualization, and SNP Distance Heatmap tabs provides a way to analyze and visualize evolutionary relationships."
     ),
+    html.P([
+        "This application was created and maintained by Taylor K. Paisie. Check out my ",
+        html.A("website", href="https://taylorpaisie.github.io/", target="_blank", className="text-primary fw-bold"),
+        " or my ",
+        html.A("Github Repositories", href="https://github.com/taylorpaisie", target="_blank", className="text-primary fw-bold"),
+        "."
+    ]),
+    html.P(["If you have any questions or issues about the SNP Workflow Dashboard, please submit an issue on the ",
+        html.A("SNP Workflow Github Repository", href="https://github.com/taylorpaisie/snp_wf_dashboard/", target="_blank", className="text-primary fw-bold"),
+        "."
+    ])
+
+
 ], className="mt-4")
 
 # How to Use Tab Content
