@@ -1,5 +1,6 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
+from info_layout import about_tab, how_to_use_tab
 
 # Define the layout
 app_layout = dbc.Container([
@@ -94,70 +95,6 @@ app_layout = dbc.Container([
             ])
         ]),
 
-        # Tab for Standalone Map
-        # dcc.Tab(label='Map Viewer', children=[
-        #     dbc.Container([
-        #         dbc.Row([
-        #             dbc.Col(html.H5("Upload GeoJSON or Search for a Location", className="text-center", style={'color': 'white'}))
-        #         ]),
-
-        #         # Upload GeoJSON
-        #         dbc.Row([
-        #             dbc.Col([
-        #                 dcc.Upload(
-        #                     id='upload-standalone-geojson',
-        #                     children=dbc.Button("Upload GeoJSON File", color="primary", className="mt-2"),
-        #                     style={
-        #                         'width': '100%', 'height': '60px', 'lineHeight': '60px',
-        #                         'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-        #                         'textAlign': 'center', 'margin': '10px'
-        #                     },
-        #                     multiple=False
-        #                 ),
-        #                 html.Div(id="standalone-geojson-upload-status", className="mt-2 text-success"),
-        #             ], width=12)
-        #         ]),
-
-        #         html.Hr(),
-
-        #         # Location Search
-        #         dbc.Row([
-        #             dbc.Col([
-        #                 html.Label("Search for a City Name:"),
-        #                 dcc.Input(id="search-standalone-city", type="text", placeholder="e.g., Paris", className="mb-2"),
-        #                 dbc.Button("Search", id="search-standalone-city-btn", color="primary", className="mt-2"),
-        #                 html.Div(id="standalone-city-search-status", className="mt-2 text-success"),
-        #             ], width=6)
-        #         ]),
-
-        #         html.Hr(),
-
-        #         # ✅ Zoom Slider
-        #         dbc.Row([
-        #             dbc.Col([
-        #                 html.Label("Zoom Level:"),
-        #                 dcc.Slider(
-        #                     id="standalone-map-zoom",
-        #                     min=1, 
-        #                     max=18, 
-        #                     step=1, 
-        #                     value=6,  # Default zoom level
-        #                     marks={i: str(i) for i in range(1, 19, 3)}
-        #                 ),
-        #             ], width=12)
-        #         ]),
-
-        #         html.Hr(),
-
-        #         # Standalone Map Display
-        #         dbc.Row([
-        #             dbc.Col(html.Div(id='standalone-map-container', style={'height': '600px'}), width=12)
-        #         ])
-        #     ])
-        # ]),
-
-
-
         # Tab for SNP Distance Heatmap
         dcc.Tab(label='SNP Distance Heatmap', children=[
             dbc.Container([
@@ -183,7 +120,11 @@ app_layout = dbc.Container([
                     ], width=12)
                 ])
             ])
-        ])
+        ]),
+
+        about_tab,
+        how_to_use_tab       
+
     ],
     colors={
         "border": "black",      # ✅ Make tab borders black
