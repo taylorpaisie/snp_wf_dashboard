@@ -37,8 +37,24 @@ how_to_use_content = dbc.Container([
         html.Li("Toggle the tip labels to show or hide tree node names."),
         html.Li("Upload a SNP Distance Matrix TSV file for SNP distance heatmap.")
     ]),
-    html.P("For more details, refer to the documentation or contact support.")
+
+    html.P("The metadata file for uploading in the Phylogenetic Tree Visualization tab must be a tab-delimited text file with the following columns:"),
+    html.Ol([
+        html.Li("taxa"),
+        html.Li("date (optional)"),
+        html.Li("location")
+    ]),
+    html.P(["For more details or if you are experiencing any problems with the dashboard, please submit an issue on the ",
+        html.A("SNP Workflow Github Repository", href="https://github.com/taylorpaisie/snp_wf_dashboard/", target="_blank", className="text-primary fw-bold"),
+        "."
+    ]),
+    html.Img(
+        src='/assets/hiding_ham.jpg',  # Path to the image
+        alt='Do not be like Hamilton and hide from your data!',
+        style={'width': '25%', 'height': 'auto', 'marginTop': '20px'}
+    )
 ], className="mt-4")
+
 
 # Exporting the layouts
 about_tab = dcc.Tab(label='About', children=[about_content])
