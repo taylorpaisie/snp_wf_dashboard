@@ -111,7 +111,7 @@ def draw_clade_rectangular(clade, x_start, line_shapes, x_coords, y_coords):
 
 def generate_location_colors(locations):
     unique_locations = locations.unique()
-    colors = px.colors.qualitative.Set3  # Pick a color palette
+    colors = px.colors.qualitative.Bold  # Pick a color palette
     color_map = {loc: colors[i % len(colors)] for i, loc in enumerate(unique_locations)}
     return color_map
 
@@ -201,7 +201,7 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels, height=1000, wid
                 x=[x],
                 y=[y],
                 mode='markers+text' if show_tip_labels else 'markers',
-                marker=dict(size=8, color=color, line=dict(width=1.5, color='black')),
+                marker=dict(size=12, color=color, line=dict(width=1.5, color='black')),
                 name=location if show_legend else None,
                 text=f"<b>{clade.name}</b><br>Location: {location}" if show_tip_labels else "",
                 textposition="middle right",
@@ -215,7 +215,7 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels, height=1000, wid
                     x=[x],
                     y=[y],
                     mode='markers',
-                    marker=dict(size=6, color='red', symbol='triangle-up'),
+                    marker=dict(size=10, color='black', symbol='diamond'),
                     hoverinfo='skip',
                     showlegend=False
                 ))
