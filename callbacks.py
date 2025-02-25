@@ -67,7 +67,6 @@ def get_city_coordinates(city_name):
         return None, None, f"⚠️ Error fetching city coordinates: {str(e)}"
 
 
-
 def get_rectangular_coordinates(tree):
     xcoords = tree.depths(unit_branch_lengths=True)
     ycoords = {}
@@ -110,57 +109,68 @@ def draw_clade_rectangular(clade, x_start, line_shapes, x_coords, y_coords):
         for subclade in clade:
             draw_clade_rectangular(subclade, x_end, line_shapes, x_coords, y_coords)
 
-def create_tree_plot(tree_file, metadata_file, show_tip_labels):
-    from plotly.colors import qualitative
+def generate_location_colors(locations):
+    unique_locations = locations.unique()
+    colors = px.colors.qualitative.Set3  # Pick a color palette
+    color_map = {loc: colors[i % len(colors)] for i, loc in enumerate(unique_locations)}
+    return color_map
 
+def create_tree_plot(tree_file, metadata_file, show_tip_labels, height=1000, width=900):
     # Load tree and metadata
     tree = Phylo.read(tree_file, 'newick')
+    tree.root_at_midpoint()  # Midpoint rooting for better visual balance
+
     metadata = pd.read_csv(metadata_file, sep='\t')
-    metadata['location'] = metadata['location'].fillna('Unknown')  # Handle missing locations
 
-    # Map metadata to colors
-    location_colors = {
-        loc: qualitative.Plotly[i % len(qualitative.Plotly)]
-        for i, loc in enumerate(metadata['location'].unique())
-    }
+    # Validate required columns
+    if 'taxa' not in metadata.columns or 'location' not in metadata.columns:
+        raise ValueError("Metadata file must contain 'taxa' and 'location' columns.")
 
-    # Generate x and y coordinates
+    metadata['location'] = metadata['location'].fillna('Unknown')
+
+    # Dynamically generate color mapping from metadata locations
+    location_colors = generate_location_colors(metadata['location'])
+
+    # Generate x and y coordinates using cumulative branch lengths
     x_coords = {}
     y_coords = {}
     max_y = 0
 
     def assign_coordinates(clade, x_start=0, y_start=0):
         nonlocal max_y
-        branch_length = clade.branch_length if clade.branch_length else 0.001
+        branch_length = clade.branch_length if clade.branch_length else 0.0
+        x_current = x_start + branch_length
         if clade.is_terminal():
-            x_coords[clade] = x_start + branch_length
+            x_coords[clade] = x_current
             y_coords[clade] = y_start
             max_y = max(max_y, y_start)
             return y_start + 1
         else:
             y_positions = []
             for child in clade.clades:
-                y_start = assign_coordinates(child, x_start + branch_length, y_start)
+                y_start = assign_coordinates(child, x_current, y_start)
                 y_positions.append(y_start - 1)
-            x_coords[clade] = x_start + branch_length
+            x_coords[clade] = x_current
             y_coords[clade] = sum(y_positions) / len(y_positions)
             return y_start
 
     assign_coordinates(tree.root)
 
-    # Create line shapes for branches
+    # Create line shapes for branches using accurate branch lengths
     line_shapes = []
     for clade in tree.find_clades(order='level'):
         x_start = x_coords[clade]
         y_start = y_coords[clade]
         if clade.clades:
             y_positions = [y_coords[child] for child in clade.clades]
+            # Vertical line for connecting children
             line_shapes.append(dict(
                 type='line',
                 x0=x_start, y0=min(y_positions),
                 x1=x_start, y1=max(y_positions),
-                line=dict(color='black', width=1)
+                line=dict(color='black', width=3)  # Thicker lines
             ))
+            # Horizontal lines for branches
             for child in clade.clades:
                 x_end = x_coords[child]
                 y_end = y_coords[child]
@@ -168,18 +178,19 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels):
                     type='line',
                     x0=x_start, y0=y_end,
                     x1=x_end, y1=y_end,
-                    line=dict(color='black', width=1)
+                    line=dict(color='black', width=3)  # Thicker lines
                 ))
 
-    # Create scatter points for tips
+    # Create scatter points for tips and support values > 90
     tip_markers = []
+    node_markers = []
     seen_locations = set()
-    for clade in tree.get_terminals():
+    for clade in tree.find_clades():
         x = x_coords[clade]
         y = y_coords[clade]
-        if clade.name in metadata['taxa'].values:
-            meta_row = metadata[metadata['taxa'] == clade.name].iloc[0]
-            location = meta_row['location']
+        if clade.is_terminal():
+            meta_row = metadata[metadata['taxa'] == clade.name]
+            location = meta_row['location'].iloc[0] if not meta_row.empty else 'Unknown'
             color = location_colors.get(location, 'gray')
 
             show_legend = location not in seen_locations
@@ -190,24 +201,46 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels):
                 x=[x],
                 y=[y],
                 mode='markers+text' if show_tip_labels else 'markers',
-                marker=dict(size=10, color=color, line=dict(width=1, color='black')),
+                marker=dict(size=8, color=color, line=dict(width=1.5, color='black')),
                 name=location if show_legend else None,
                 text=f"<b>{clade.name}</b><br>Location: {location}" if show_tip_labels else "",
                 textposition="middle right",
                 hoverinfo='text',
                 showlegend=show_legend
             ))
+        else:
+            # Plot support values > 90 as red triangles
+            if clade.confidence and clade.confidence > 90:
+                node_markers.append(go.Scatter(
+                    x=[x],
+                    y=[y],
+                    mode='markers',
+                    marker=dict(size=6, color='red', symbol='triangle-up'),
+                    hoverinfo='skip',
+                    showlegend=False
+                ))
+
+    # Add a scale bar equivalent
+    scale_bar = [
+        dict(
+            type='line',
+            x0=0, y0=-1,
+            x1=0.05, y1=-1,
+            line=dict(color='black', width=2)
+        )
+    ]
 
     layout = go.Layout(
-        title='Phylogenetic Tree with Tip Label Toggle',
-        xaxis=dict(title='Evolutionary Distance', showgrid=True, zeroline=False),
+        title='Phylogenetic Tree with Midpoint Rooting and Support Values',
+        xaxis=dict(title='Evolutionary Distance', showgrid=False, zeroline=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-1, max_y + 1]),
-        shapes=line_shapes,
-        height=800,
+        shapes=line_shapes + scale_bar,
+        height=height,  # Dynamic height
+        width=width,  # Dynamic width  # Adjust width for better alignment
         legend=dict(title="Locations", orientation="h", y=-0.2),
     )
 
-    return go.Figure(data=tip_markers, layout=layout)
+    return go.Figure(data=tip_markers + node_markers, layout=layout)
 
 def register_callbacks(app):
     # Callback for MSA display
@@ -276,96 +309,6 @@ def register_callbacks(app):
             except Exception as e:
                 return html.Div(f"Error processing tree file: {str(e)}", className="text-danger")
         return html.Div("Please upload both a tree file and a metadata file.", className="text-warning")
-
-    # Callback for Folium Map Display
-
-    # @app.callback(
-    #     Output('phylo-map-container', 'children'),
-    #     [Input('upload-geojson', 'contents'),
-    #     Input('map-city', 'value'),  # Added city name input
-    #     Input('map-lat', 'value'),
-    #     Input('map-lon', 'value'),
-    #     Input('map-zoom', 'value'),
-    #     Input('add-marker-btn', 'n_clicks')],
-    #     [State('marker-name', 'value'),
-    #     State('marker-lat', 'value'),
-    #     State('marker-lon', 'value')]
-    # )
-    # def update_folium_map(geojson_contents, city_name, latitude, longitude, zoom, n_clicks, marker_name, marker_lat, marker_lon):
-    #     global MARKERS  # Use global storage for markers
-
-    #     # ✅ 1. Convert city name to coordinates if provided
-    #     if city_name:
-    #         geocoded_lat, geocoded_lon, error_msg = get_city_coordinates(city_name)
-    #         if geocoded_lat and geocoded_lon:
-    #             latitude, longitude = geocoded_lat, geocoded_lon
-    #         else:
-    #             return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
-
-    #     # ✅ 2. Decode GeoJSON if uploaded
-    #     geojson_data = None
-    #     if geojson_contents:
-    #         content_type, content_string = geojson_contents.split(',')
-    #         decoded = base64.b64decode(content_string).decode('utf-8')
-    #         geojson_data = json.loads(decoded)
-
-    #     # ✅ 3. Add new marker if button clicked
-    #     if ctx.triggered_id == "add-marker-btn" and marker_name and marker_lat and marker_lon:
-    #         MARKERS.append({"name": marker_name, "lat": float(marker_lat), "lon": float(marker_lon)})
-
-    #     # ✅ 4. Generate updated Folium map
-    #     folium_map_html = phylo_map.generate_folium_map(geojson_data, latitude, longitude, zoom, MARKERS)
-
-    #     return html.Iframe(
-    #         srcDoc=folium_map_html,
-    #         width="100%",
-    #         height="1000px",
-    #         style={"border": "none"}
-    #     )
-
-    # #standalone map tab
-    # @app.callback(
-    #     Output('standalone-map-container', 'children'),
-    #     [Input('upload-standalone-geojson', 'contents'),
-    #     Input('search-standalone-city-btn', 'n_clicks'),
-    #     Input('standalone-map-zoom', 'value')],  # ✅ New Zoom Input
-    #     [State('upload-standalone-geojson', 'filename'),
-    #     State('search-standalone-city', 'value')]
-    # )
-    # def update_standalone_map(geojson_contents, n_clicks, zoom, filename, city_name):
-    #     """Update Standalone Folium map based on GeoJSON upload, city search, and zoom level."""
-        
-    #     latitude, longitude, error_msg = 40.650002, -73.949997, None  # Default location
-
-    #     # ✅ Handle city name search separately
-    #     if ctx.triggered_id == "search-standalone-city-btn" and city_name:
-    #         lat, lon, error_msg = get_city_coordinates(city_name)
-    #         if lat and lon:
-    #             latitude, longitude = lat, lon
-    #         else:
-    #             return html.Div(f"⚠️ Error: {error_msg}", className="text-danger")
-
-    #     # ✅ Handle GeoJSON Upload
-    #     geojson_data = None
-    #     if geojson_contents:
-    #         try:
-    #             content_type, content_string = geojson_contents.split(',')
-    #             decoded = base64.b64decode(content_string).decode('utf-8')
-    #             geojson_data = json.loads(decoded)
-    #         except Exception as e:
-    #             return html.Div(f"⚠️ Error parsing GeoJSON: {str(e)}", className="text-danger")
-
-    #     # ✅ Generate Standalone Map with Zoom
-    #     standalone_map_html = phylo_map.generate_standalone_map(geojson_data, latitude, longitude, zoom)
-
-    #     return html.Iframe(
-    #         srcDoc=standalone_map_html,
-    #         width="100%",
-    #         height="600px",
-    #         style={"border": "none"}
-    #     )
-
-
 
     @app.callback(
         [Output('snp-heatmap-container', 'children'),
