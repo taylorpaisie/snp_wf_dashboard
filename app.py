@@ -1,4 +1,4 @@
-from dash import Dash
+from dash import Dash, html
 import dash_bootstrap_components as dbc
 from layout import app_layout
 import callbacks 
@@ -7,7 +7,8 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Initialize app
-app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
+app = Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO, dbc.icons.BOOTSTRAP], suppress_callback_exceptions=True)
+
 
 # ❌ REMOVE suppress_callback_exceptions
 # app.config.suppress_callback_exceptions = True  ❌ REMOVE this line!

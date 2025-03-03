@@ -247,7 +247,7 @@ def register_callbacks(app):
     @app.callback(
         Output('output-alignment-chart', 'children'),
         [Input('upload-fasta', 'contents'),
-         Input('alignment-colorscale', 'value')],
+        Input('alignment-colorscale', 'value')],
         [State('upload-fasta', 'filename')]
     )
     def display_msa(file_contents, colorscale, file_name):
@@ -256,23 +256,28 @@ def register_callbacks(app):
                 # Decode the uploaded FASTA file
                 content_type, content_string = file_contents.split(',')
                 decoded = base64.b64decode(content_string).decode('utf-8')
-                print("Decoded FASTA content:", decoded)  # Debugging output
 
-                if file_name.endswith('.fasta'):
-                    # Render the AlignmentChart
-                    return dashbio.AlignmentChart(
-                        id='alignment-viewer',
-                        data=decoded,
-                        colorscale=colorscale if colorscale else 'nucleotide',
-                        tilewidth=20
-                    )
-                else:
-                    return html.Div("Uploaded file is not a valid FASTA file.", className="text-danger")
+                # ✅ Validate FASTA format using Biopython
+                fasta_io = StringIO(decoded)
+                records = list(SeqIO.parse(fasta_io, "fasta"))
+
+                if not records:
+                    return html.Div("Uploaded file is not a valid FASTA file (No valid sequences found).", className="text-danger")
+
+                # ✅ Render the AlignmentChart
+                return dashbio.AlignmentChart(
+                    id='alignment-viewer',
+                    data=decoded,
+                    colorscale=colorscale if colorscale else 'nucleotide',
+                    tilewidth=20
+                )
+
             except Exception as e:
                 print("Error processing FASTA file:", str(e))  # Debugging output
                 return html.Div(f"An error occurred: {str(e)}", className="text-danger")
 
         return html.Div("No FASTA file uploaded yet.", className="text-warning")
+
 
 
     # Callback for Phylogenetic Tree Visualization
