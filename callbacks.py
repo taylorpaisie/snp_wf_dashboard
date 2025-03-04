@@ -111,7 +111,7 @@ def draw_clade_rectangular(clade, x_start, line_shapes, x_coords, y_coords):
 
 def generate_location_colors(locations):
     unique_locations = locations.unique()
-    colors = px.colors.qualitative.Bold  # Pick a color palette
+    colors = px.colors.qualitative.Plotly
     color_map = {loc: colors[i % len(colors)] for i, loc in enumerate(unique_locations)}
     return color_map
 
