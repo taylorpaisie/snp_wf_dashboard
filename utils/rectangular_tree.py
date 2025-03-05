@@ -99,7 +99,7 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels, height=None, wid
                 seen_locations.add(location)
 
             # Ensure long labels don't overlap by adding a line break every 30 characters
-            formatted_label = "<br>".join([clade.name[i:i+30] for i in range(0, len(clade.name), 30)])
+            formatted_label = "<br>".join([clade.name[i:i+75] for i in range(0, len(clade.name), 75)])
 
             tip_markers.append(go.Scatter(
                 x=[x], y=[y], mode='markers+text' if show_tip_labels else 'markers',
