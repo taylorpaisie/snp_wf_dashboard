@@ -11,6 +11,9 @@ app = Dash(
     suppress_callback_exceptions=True
 )
 
+server = app.server  # ✅ Expose the underlying Flask server
+
+
 app.layout = app_layout
 
 # ✅ Register callbacks
