@@ -117,7 +117,7 @@ def create_tree_plot(tree_file, metadata_file, show_tip_labels, height=None, wid
                 node_markers.append(go.Scatter(
                     x=[x], y=[y], mode='markers',
                     marker=dict(size=12, color='black', symbol='diamond'),
-                    hoverinfo='skip', showlegend=True
+                    hoverinfo='skip', showlegend=False
                 ))
 
     # Add a scale bar
