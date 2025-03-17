@@ -3,11 +3,24 @@ import io
 import pandas as pd
 from Bio import Phylo
 
+# def decode_uploaded_file(contents):
+#     """Decodes a base64-encoded file uploaded to Dash."""
+#     content_type, content_string = contents.split(',')
+#     decoded = base64.b64decode(content_string).decode("utf-8")
+#     return decoded
+
 def decode_uploaded_file(contents):
-    """Decodes a base64-encoded file uploaded to Dash."""
+    """
+    Decodes an uploaded file from Dash Upload component.
+    Assumes contents are base64 encoded.
+    """
     content_type, content_string = contents.split(',')
-    decoded = base64.b64decode(content_string).decode("utf-8")
-    return decoded
+    decoded = base64.b64decode(content_string)
+    
+    try:
+        return decoded.decode('utf-8')  # Convert bytes to string
+    except UnicodeDecodeError:
+        return decoded  # Return raw bytes if not a text file
 
 def save_uploaded_tree(contents, filename="uploaded_tree.tree"):
     """Decodes and saves a Newick tree file."""
