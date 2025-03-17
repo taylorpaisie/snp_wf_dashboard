@@ -9,3 +9,4 @@ folium
 geopy
 python-dotenv
 biopython
+kaleido
