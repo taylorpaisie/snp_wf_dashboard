@@ -83,7 +83,6 @@ def register_tree_callbacks(app):
         return dcc.send_file(tmpfile_path)
 
 
-
     @app.callback(
         Output('large-tree-graph-container', 'children'),
         [Input('upload-large-tree', 'contents'),
@@ -105,22 +104,39 @@ def register_tree_callbacks(app):
             tree = Phylo.read(tree_file, 'newick')
             tree.root_at_midpoint()
 
-            # ✅ Fix metadata loading
-            metadata = pd.read_csv(metadata_file, sep='\t', skiprows=3, header=None, on_bad_lines="warn")
-            metadata = metadata.iloc[:, :4]  # ✅ Keep only the first 4 columns
-            metadata.columns = ["taxa", "type", "color", "region"]
+            # Load metadata
+            metadata = pd.read_csv(metadata_file, sep='\t', skiprows=3, header=None, names=["taxa", "type", "color", "region"])
+            metadata["taxa"] = metadata["taxa"].str.replace("'", "").str.strip()
+            metadata_dict = dict(zip(metadata["taxa"], metadata["color"]))
 
-            if color_by not in metadata.columns:
-                color_by = "region"  # ✅ Default to 'region' if column selection is invalid
+            # Normalize tree taxa names
+            tree_taxa = {clade.name.strip(): clade.name.strip() for clade in tree.get_terminals() if clade.name}
+            fixed_metadata_dict = {tree_taxa.get(taxon, taxon): color for taxon, color in metadata_dict.items()}
 
-            metadata_colors = generate_location_colors(metadata[color_by])
-
-            fig = plot_tree_circular(tree, metadata, metadata_colors, show_labels)  # ✅ Use your function
-            return dcc.Graph(figure=fig)
+            # Generate the circular tree plot
+            fig = plot_tree_circular(tree, fixed_metadata_dict)
+            return dcc.Graph(id='large-tree-graph', figure=fig)
 
         except Exception as e:
-            logger.error(f"Error processing large tree file: {str(e)}")
             return html.Div(f"Error processing tree file: {str(e)}", className="text-danger")
 
+    # 🔥 FIX: Correct SVG Export for Advanced Phylogenetic Tree
+    @app.callback(
+        Output("download-large-svg", "data"),
+        [Input("download-large-svg-btn", "n_clicks")],
+        [State("large-tree-graph", "figure")],
+        prevent_initial_call=True
+    )
+    def export_large_tree_svg(n_clicks, figure):
+        """Exports the large circular phylogenetic tree as an SVG file."""
+        if not figure:
+            raise PreventUpdate  # Ensure function does not execute if no tree is loaded
+
+        # ✅ Save as SVG
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".svg") as tmpfile:
+            pio.write_image(figure, tmpfile.name, format="svg", engine="kaleido")
+            tmpfile_path = tmpfile.name  # Store the file path for return
+
+        return dcc.send_file(tmpfile_path)
 
 

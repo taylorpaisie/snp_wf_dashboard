@@ -39,7 +39,16 @@ advanced_phylo_tree_layout = dcc.Tab(label='Advanced Phylogenetic Tree', childre
             ], width=12)
         ]),
         dbc.Row([
-            dbc.Col(html.Div(id='large-tree-graph-container'), width=12)  # Large tree graph container
+            dbc.Col(html.Div(id='large-tree-graph-container'), width=12),
+        ]),
+        html.Br(),
+
+        # 🔥 FIX: Change Download Button & Download Component IDs
+        dbc.Row([
+            dbc.Col([
+                dbc.Button("Download Tree as SVG", id="download-large-svg-btn", color="success", className="mt-3"),
+                dcc.Download(id="download-large-svg")
+            ], width=12, className="d-flex justify-content-center"),
         ])
     ])
 ])
