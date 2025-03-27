@@ -9,10 +9,12 @@ def register_snp_callbacks(app):
     @app.callback(
         [Output('snp-heatmap-container', 'children'),
          Output('snp-table-container', 'children')],
-        Input('upload-snp-matrix', 'contents'),
+        [Input('upload-snp-matrix', 'contents'),
+         Input('color-palette-dropdown-heatmap', 'value')],  # ✅ Listen to Dropdown
         State('upload-snp-matrix', 'filename')
     )
-    def update_snp_heatmap(file_contents, file_name):
+    def update_snp_heatmap(file_contents, heatmap_palette, file_name):
+
         if not file_contents:
             return html.Div("No file uploaded yet.", className="text-warning"), html.Div()
 
@@ -25,11 +27,35 @@ def register_snp_callbacks(app):
             df_melted = df.melt(id_vars=["Sample"], var_name="Variable", value_name="Value")
             pivot_df = df_melted.pivot(index="Sample", columns="Variable", values="Value")
 
+            # ✅ Define a color scale mapping dictionary
+            color_scales = {
+                'viridis': px.colors.sequential.Viridis,
+                'plasma': px.colors.sequential.Plasma,
+                'inferno': px.colors.sequential.Inferno,
+                'magma': px.colors.sequential.Magma,
+                'cividis': px.colors.sequential.Cividis,
+                'turbo': px.colors.sequential.Turbo,
+                'blues': px.colors.sequential.Blues,
+                'greens': px.colors.sequential.Greens,
+                'oranges': px.colors.sequential.Oranges,
+                'reds': px.colors.sequential.Reds,
+                'blackbody': px.colors.sequential.Blackbody,
+                'rainbow': px.colors.sequential.Rainbow,
+                'electric': px.colors.sequential.Electric,
+                'hot': px.colors.sequential.Hot
+            }
+
+            # ✅ Ensure valid color scale selection (default to Viridis)
+            if not heatmap_palette:
+                heatmap_palette = 'viridis'  # ✅ Set default if None
+            
+            selected_palette = color_scales.get(heatmap_palette.lower(), px.colors.sequential.Viridis)
+
             fig = px.imshow(
                 pivot_df,
-                color_continuous_scale='rainbow',
+                color_continuous_scale=selected_palette,  # ✅ Now correctly maps colors
                 labels={'color': 'SNP Distance'},
-                title="SNP Distance Heatmap"
+                title=f"SNP Distance Heatmap ({heatmap_palette})"
             )
 
             fig.update_layout(

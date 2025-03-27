@@ -38,4 +38,17 @@ def generate_mlst_colors(mlst_values, palette='Bold', custom_colors=None):
 
     return color_map
 
+def generate_heatmap_colors(values, palette='Plotly'):
+    """Generate a color mapping for unique values in a dataset."""
+    unique_values = values.unique()
+    
+    if hasattr(px.colors.qualitative, palette):
+        colors = getattr(px.colors.qualitative, palette)
+    else:
+        colors = px.colors.qualitative.Plotly  # Default
+    
+    color_map = {val: colors[i % len(colors)] for i, val in enumerate(unique_values)}
+    return color_map
+
+
 
